@@ -64,26 +64,26 @@ frontend/
 - 登录后前端在请求头带 `Authorization: Bearer <token>`。
 - 列表接口的 `data` 统一为 `{ "list": [...], "total": 10 }`。
 
-| 功能 | 方法 & 路径 | 说明 |
-| --- | --- | --- |
-| 注册 | `POST /api/auth/register` | body: `{username, password, nickname, phone}` |
-| 登录 | `POST /api/auth/login` | body: `{username, password}` → data: `{token, user}` |
-| 分类列表 | `GET /api/categories` | data: 分类数组 |
-| 商品列表 | `GET /api/products` | query: `page,size,keyword,categoryId,status` |
-| 商品详情 | `GET /api/products/{id}` | 含 `images`、`seller` |
-| 发布商品 | `POST /api/products` | body 含 `title, categoryId, price, description, images` |
-| 编辑/删除 | `PUT /api/products/{id}` / `DELETE /api/products/{id}` | |
-| 我发布的 | `GET /api/products/my` | |
-| 收藏列表 | `GET /api/favorites` | |
-| 收藏/取消 | `POST /api/favorites` / `DELETE /api/favorites/{productId}` | body: `{productId}` |
-| 是否已收藏 | `GET /api/favorites/check/{productId}` | data: boolean |
-| 下单 | `POST /api/orders` | body: `{productId}` |
-| 订单列表 | `GET /api/orders` | query: `role=buyer|seller, status` |
-| 改订单状态 | `PUT /api/orders/{id}/status` | body: `{status}` |
-| 发表评价 | `POST /api/reviews` | body: `{orderId, score, content}` |
-| 商品评价 | `GET /api/reviews/product/{productId}` | |
-| 用户收到的评价 | `GET /api/reviews/user/{userId}` | |
-| 图片上传 | `POST /api/upload` | multipart，字段名 `file`，data: `{url}` |
+| 功能      | 方法 & 路径                                                     | 说明                                                     |                 |
+| ------- | ----------------------------------------------------------- | ------------------------------------------------------ | --------------- |
+| 注册      | `POST /api/auth/register`                                   | body: `{username, password, nickname, phone}`          |                 |
+| 登录      | `POST /api/auth/login`                                      | body: `{username, password}` → data: `{token, user}`   |                 |
+| 分类列表    | `GET /api/categories`                                       | data: 分类数组                                             |                 |
+| 商品列表    | `GET /api/products`                                         | query: `page,size,keyword,categoryId,status`           |                 |
+| 商品详情    | `GET /api/products/{id}`                                    | 含 `images`、`seller`                                    |                 |
+| 发布商品    | `POST /api/products`                                        | body 含 `title, categoryId, price, description, images` |                 |
+| 编辑/删除   | `PUT /api/products/{id}` / `DELETE /api/products/{id}`      |                                                        |                 |
+| 我发布的    | `GET /api/products/my`                                      |                                                        |                 |
+| 收藏列表    | `GET /api/favorites`                                        |                                                        |                 |
+| 收藏/取消   | `POST /api/favorites` / `DELETE /api/favorites/{productId}` | body: `{productId}`                                    |                 |
+| 是否已收藏   | `GET /api/favorites/check/{productId}`                      | data: boolean                                          |                 |
+| 下单      | `POST /api/orders`                                          | body: `{productId}`                                    |                 |
+| 订单列表    | `GET /api/orders`                                           | query: `role=buyer                                     | seller, status` |
+| 改订单状态   | `PUT /api/orders/{id}/status`                               | body: `{status}`                                       |                 |
+| 发表评价    | `POST /api/reviews`                                         | body: `{orderId, score, content}`                      |                 |
+| 商品评价    | `GET /api/reviews/product/{productId}`                      |                                                        |                 |
+| 用户收到的评价 | `GET /api/reviews/user/{userId}`                            |                                                        |                 |
+| 图片上传    | `POST /api/upload`                                          | multipart，字段名 `file`，data: `{url}`                     |                 |
 
 > 订单状态码：`0 待确认`、`1 交易中`、`2 已完成`、`3 已取消`。
 > 商品状态码：`0 下架`、`1 在售`、`2 已售出`、`3 审核中`。
