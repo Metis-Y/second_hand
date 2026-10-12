@@ -1,3 +1,21 @@
+<!--
+  Register.vue —— 注册页            路由：/register
+  =====================================================================
+  布局：与登录页同款独立整页样式，卡片垂直水平居中
+  ┌───────────────────────────────────────┐
+  │      ┌───────────────────────┐        │
+  │      │  标题「注册」           │        │
+  │      │  用户名（3-16 位，必填）│        │
+  │      │  昵称（选填）           │        │
+  │      │  手机号（选填，格式校验）│       │
+  │      │  密码（至少 6 位）      │        │
+  │      │  确认密码（需一致）     │        │
+  │      │  [ 注册 ]  全宽按钮     │        │
+  │      │  已有账号？去登录       │        │
+  │      └───────────────────────┘ 380px  │
+  └───────────────────────────────────────┘
+  注册成功后不自动登录，跳登录页由用户手动登录。
+-->
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -7,10 +25,12 @@ import { useUserStore } from '@/stores/user'
 const router = useRouter()
 const userStore = useUserStore()
 
-const formRef = ref()
-const loading = ref(false)
+const formRef = ref()      // el-form 实例，用于触发校验
+const loading = ref(false) // 提交中状态
+// confirm 只用于前端校验，不会提交给后端
 const form = reactive({ username: '', password: '', confirm: '', nickname: '', phone: '' })
 
+// 表单校验规则：长度、必填、两次密码一致性、手机号格式
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -23,15 +43,21 @@ const rules = {
   confirm: [
     { required: true, message: '请再次输入密码', trigger: 'blur' },
     {
+      // 自定义校验：与 form.password 比较，一致则放行（cb()），否则抛错
       validator: (rule, value, cb) => (value === form.password ? cb() : cb(new Error('两次密码不一致'))),
       trigger: 'blur'
     }
   ],
   phone: [
+    // 选填：不填时正则不匹配但非必填，填写后必须是 1 开头的 11 位数字
     { pattern: /^1\d{10}$/, message: '手机号格式不正确', trigger: 'blur' }
   ]
 }
 
+/**
+ * 提交流程：校验 → 调用注册接口（只传后端需要的四个字段）→ 跳登录页
+ * 注意 confirm 字段不参与提交。
+ */
 async function submit() {
   await formRef.value.validate()
   loading.value = true
@@ -83,6 +109,7 @@ async function submit() {
 </template>
 
 <style scoped>
+/* 与 Login.vue 完全一致的整屏居中样式，保持两个页面观感统一 */
 .auth-page {
   min-height: 100vh;
   display: flex;

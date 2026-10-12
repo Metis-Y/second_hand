@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/second_hand?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+  servlet:
+    multipart:
+      #单个文件大小
+      max-file-size: 10MB
+      #总请求数据大小
+      max-request-size: 100MB
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #打印 SQL
+    map-underscore-to-camel-case: true #开启驼峰命名
+  global-config:
+    banner: false
+
+# JWT 配置（登录签发 token 时使用）
+jwt:
+  # 密钥：至少 32 位，正式上线前换成自己的一长串随机字符串
+  secret: change-me-to-a-long-random-secret-key-2024-please
+  # token 有效期（小时）
+  expire-hours: 24

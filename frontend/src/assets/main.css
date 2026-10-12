@@ -1,11 +1,26 @@
+/**
+ * =====================================================================
+ * 全局样式（非 scoped，作用于整个应用）
+ * ---------------------------------------------------------------------
+ * 这里只放两类东西：
+ *   1. CSS 变量——主题色，各组件通过 var(--sh-primary) 引用
+ *   2. 全站公用类——.page-container（页面容器）、.card（白底卡片）、
+ *      .price（价格红字）、.text-muted（灰色小字）
+ * 组件专属样式仍写在各自的 <style scoped> 里。
+ * =====================================================================
+ */
+
+/* 主题色变量：改这一处即可全局换色（顶栏、链接、选中态都用它） */
 :root {
   --sh-primary: #409eff;
 }
 
+/* 统一盒模型，让 padding/border 不撑大元素宽度，避免布局溢出 */
 * {
   box-sizing: border-box;
 }
 
+/* 重置默认边距，铺满视口高度，并设定全站字体与底色 */
 html,
 body,
 #app {
@@ -17,27 +32,32 @@ body,
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
 }
 
+/* 链接继承父级颜色，去掉下划线（需要强调时由各组件单独指定颜色） */
 a {
   text-decoration: none;
   color: inherit;
 }
 
+/* 页面容器：限宽 1200px 居中，与顶栏对齐，上下留白 */
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px 16px;
 }
 
+/* 价格样式：红色加粗 */
 .price {
   color: #f56c6c;
   font-weight: 600;
 }
 
+/* 次要说明文字：灰色小字（卖家昵称、时间、辅助提示等） */
 .text-muted {
   color: #909399;
   font-size: 13px;
 }
 
+/* 通用白底卡片：圆角 + 轻阴影，页面里所有内容区块都套它 */
 .card {
   background: #fff;
   border-radius: 8px;

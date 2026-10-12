@@ -1,13 +1,21 @@
 <!DOCTYPE html>
+<!--
+  单页应用（SPA）的 HTML 外壳。
+  页面上所有内容都由 Vue 在运行时渲染进 #app，这里只保留最小骨架。
+  注意标题会被路由守卫按 meta.title 动态覆盖（见 src/router/index.js）。
+-->
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- 移动端适配：按设备宽度渲染，禁止初始缩放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>校园二手交易平台</title>
   </head>
   <body>
+    <!-- Vue 应用的挂载点（main.js 中 app.mount('#app')） -->
     <div id="app"></div>
+    <!-- type="module"：以 ES 模块方式加载入口，由 Vite 负责编译与热更新 -->
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
