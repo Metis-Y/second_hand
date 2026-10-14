@@ -3,9 +3,9 @@
  * axios 封装（全局唯一的请求实例）
  * ---------------------------------------------------------------------
  * 后端统一响应格式：{ code, message, data }
- *   · code = 200 / 0 → 成功，拦截器直接把 data 抛给业务代码
- *   · code = 401     → 未登录或 token 失效，清除登录态并跳登录页
- *   · 其他 code      → 弹出 message 提示并抛错，由页面 try/catch 捕获
+ *   · code = 1 → 成功，拦截器直接把 data 抛给业务代码
+ *   · code = 0 → 失败，弹出 message 提示并抛错，由页面 try/catch 捕获
+ *   · 未登录/token 失效 → 后端返回 HTTP 401 状态码，这里清登录态并跳登录页
  *
  * 因此业务层拿到的就是 data 本身，无需再写 res.data.data。
  * =====================================================================
@@ -43,12 +43,18 @@ request.interceptors.response.use(
     if (res === null || typeof res !== 'object' || res.code === undefined) {
       return res
     }
-    // 成功：只把 data 交给调用方
-    if (res.code === 200 || res.code === 0) {
+    // 成功（code = 1）：只把 data 交给调用方
+    if (res.code === 1) {
       return res.data
     }
-    // 未登录 / token 失效：本地清空登录态，提示后跳转登录页
-    if (res.code === 401) {
+    // 失败（code = 0）：直接展示后端 message
+    ElMessage.error(res.message || '请求失败')
+    return Promise.reject(new Error(res.message || '请求失败'))
+  },
+  // 网络层错误（超时、断网、5xx 等）：error.response 可能为空，做兜底文案
+  (error) => {
+    // 未登录/token 失效：后端返回 HTTP 401 状态码
+    if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       ElMessage.error('登录已过期，请重新登录')
@@ -56,14 +62,8 @@ request.interceptors.response.use(
       setTimeout(() => {
         window.location.href = '/login'
       }, 600)
-      return Promise.reject(new Error(res.message || '未登录'))
+      return Promise.reject(new Error('未登录或登录已过期'))
     }
-    // 其他业务错误：直接展示后端 message
-    ElMessage.error(res.message || '请求失败')
-    return Promise.reject(new Error(res.message || '请求失败'))
-  },
-  // 网络层错误（超时、断网、5xx 等）：error.response 可能为空，做兜底文案
-  (error) => {
     const msg = error.response?.data?.message || error.message || '网络异常'
     ElMessage.error(msg)
     return Promise.reject(error)

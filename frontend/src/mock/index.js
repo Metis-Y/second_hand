@@ -178,11 +178,9 @@ function currentUser() {
   }
   return users[1]
 }
-/** 复制用户对象并删掉密码字段，避免把密码返回给前端页面 */
-function stripPassword(u) {
-  const c = { ...u }
-  delete c.password
-  return c
+/** 把用户记录转成返回给前端的 UserDTO（token + 基础信息，去掉密码/手机号/性别） */
+function toUserDTO(u) {
+  return { id: u.id, username: u.username, nickname: u.nickname, avatar: u.avatar, role: u.role }
 }
 
 // ---------- 认证 ----------
@@ -196,24 +194,24 @@ export async function login({ username, password }) {
   await delay()
   const u = users.find((x) => x.username === username && x.password === password)
   if (!u) throw new Error('用户名或密码错误')
-  return { token: `mock-token-${u.id}`, ...stripPassword(u) }
+  return { token: `mock-token-${u.id}`, ...toUserDTO(u) }
 }
 
 /**
  * 注册：用户名查重 → 追加到 users 数组（仅本次会话内存有效，刷新即失效）
- * @param {{username: string, password: string, nickname?: string, phone?: string}} 注册表单
+ * @param {{username: string, password: string, nickname?: string, phone?: string, gender?: number}} 注册表单
  * @throws {Error} 用户名已存在
  */
-export async function register({ username, password, nickname, phone }) {
+export async function register({ username, password, nickname, phone, gender }) {
   await delay()
   if (users.some((x) => x.username === username)) throw new Error('用户名已存在')
   const u = {
     id: Date.now(), username, password,
     nickname: nickname || username, phone: phone || '',
-    gender: 0, role: 0, avatar: svgImg('新')
+    gender: gender ?? null, role: 0, avatar: svgImg('新')
   }
   users.push(u)
-  return { token: `mock-token-${u.id}`, user: stripPassword(u) }
+  return { token: `mock-token-${u.id}`, ...toUserDTO(u) }
 }
 
 // ---------- 分类 ----------

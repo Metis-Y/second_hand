@@ -1,13 +1,11 @@
 package com.example.controller;
 
 import com.example.dto.Result;
-import com.example.dto.LoginDTO;
-import com.example.dto.RegisterDTO;
+import com.example.dto.UserDTO;
 import com.example.entity.User;
-import com.example.service.AuthService;
-import com.example.vo.LoginVO;
+import com.example.service.UserService;
+import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,19 +17,22 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/auth")
-public class LoginController {
-    @Autowired
-    private AuthService authService;
+public class UserController {
+
+    @Resource
+    private UserService userService;
 
     /** 用户注册 */
     @PostMapping("/register")
-    public Result<User> register(@RequestBody @Valid RegisterDTO dto) {
-        return Result.success(authService.register(dto));
+    public Result register(@RequestBody @Valid User user) {
+        UserDTO userDTO = userService.register(user);
+        return Result.success(userDTO);
     }
 
     /** 用户登录 */
     @PostMapping("/login")
-    public Result<LoginVO> login(@RequestBody @Valid LoginDTO dto) {
-        return Result.success(authService.login(dto));
+    public Result login(@RequestBody @Valid User user) {
+        UserDTO userDTO = userService.login(user);
+        return Result.success(userDTO);
     }
 }

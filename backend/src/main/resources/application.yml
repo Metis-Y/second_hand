@@ -24,6 +24,11 @@ mybatis-plus:
 # JWT 配置（登录签发 token 时使用）
 jwt:
   # 密钥：至少 32 位，正式上线前换成自己的一长串随机字符串
-  secret: change-me-to-a-long-random-secret-key-2024-please
+  secret: change-me-to-a-long-random-secret-key-2026-please
   # token 有效期（小时）
   expire-hours: 24
+
+# 本地静态图片目录（分类图、商品图、头像等），/uploads/** 会映射到这个目录
+# 注意用正斜杠 /，末尾保留 /
+file:
+  upload-dir: D:/quan_zhan/second_hand/uploads/

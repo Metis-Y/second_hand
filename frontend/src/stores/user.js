@@ -39,11 +39,18 @@ export const useUserStore = defineStore('user', {
       return data
     },
     /**
-     * 注册：只转发给接口，注册成功后不自动登录（由页面引导去登录页）
+     * 注册：调用接口 → 注册成功即自动登录（写入 token 和 user，与登录一致）
      * @param {{username: string, password: string, nickname?: string, phone?: string}} payload
+     * @returns {Promise<{token: string, user: object}>} 后端返回的数据
      */
-    register(payload) {
-      return apiRegister(payload)
+    async register(payload) {
+      const data = await apiRegister(payload)
+      const { token, ...user } = data
+      this.token = token
+      this.user = user
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
+      return data
     },
     /** 退出登录：清空内存状态与 localStorage，使页面回到未登录形态 */
     logout() {

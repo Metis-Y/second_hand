@@ -3,8 +3,8 @@
   =====================================================================
   页面布局（自上而下，整体限宽 1200px 居中）：
   ┌─────────────────────────────────────────────────────────┐
-  │ category-bar 分类筛选栏                                   │
-  │   「全部」+ 接口返回的各分类，单选高亮                      │
+  │ category-bar 分类导航栏（带图）                           │
+  │   「全部」+ 各分类（图标 + 名称），单选高亮               │
   ├─────────────────────────────────────────────────────────┤
   │ grid 商品宫格（宽屏 4 列，窄屏 ≤960px 降为 2 列）           │
   │   └ ProductCard × N（数据来自分页接口）                    │
@@ -94,16 +94,22 @@ watch(
 
 <template>
   <div class="page-container">
-    <!-- ===== 分类筛选栏：全部 + 各分类，点击即筛选 ===== -->
+    <!-- ===== 分类导航栏：全部 + 各分类（图标+名称），点击即筛选 ===== -->
     <div class="category-bar card">
-      <span class="cat" :class="{ active: activeCategory === null }" @click="onCategory(null)">全部</span>
-      <span
+      <div class="cat" :class="{ active: activeCategory === null }" @click="onCategory(null)">
+        <div class="cat-img cat-img-all">全</div>
+        <span class="cat-name">全部</span>
+      </div>
+      <div
         v-for="c in categories"
         :key="c.id"
         class="cat"
         :class="{ active: activeCategory === c.id }"
         @click="onCategory(c.id)"
-      >{{ c.name }}</span>
+      >
+        <img class="cat-img" :src="c.image" :alt="c.name" />
+        <span class="cat-name">{{ c.name }}</span>
+      </div>
     </div>
 
     <!-- ===== 商品宫格：无数据展示空状态，否则展示卡片网格 ===== -->
@@ -127,31 +133,59 @@ watch(
 </template>
 
 <style scoped>
-/* 分类标签横向排列，放不下自动换行 */
+/* 分类导航：横向排列，放不下自动换行 */
 .category-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 16px;
   margin-bottom: 16px;
+  padding: 12px;
 }
-/* 单个分类胶囊：默认浅灰底 */
+/* 单个分类：图标在上、名称在下 */
 .cat {
-  padding: 6px 16px;
-  border-radius: 18px;
-  background: #f2f3f5;
-  color: #606266;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 72px;
+  padding: 8px 4px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
   transition: all 0.15s;
 }
-.cat:hover {
-  background: #e8f1fd;
-  color: var(--sh-primary);
+.cat-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f2f3f5;
 }
-/* 选中态：主题色实心 */
+/* 「全部」没有图片，用圆形占位 + 文字 */
+.cat-img-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #909399;
+}
+.cat-name {
+  font-size: 13px;
+  color: #606266;
+  line-height: 1;
+}
+.cat:hover {
+  background: #f5f7fa;
+}
+/* 选中态：底色高亮 + 名称主题色 + 图标描边 */
 .cat.active {
-  background: var(--sh-primary);
-  color: #fff;
+  background: #e8f1fd;
+}
+.cat.active .cat-name {
+  color: var(--sh-primary);
+  font-weight: 600;
+}
+.cat.active .cat-img {
+  box-shadow: 0 0 0 2px var(--sh-primary);
 }
 /* 商品网格：宽屏 4 列；min-height 防止加载时页面高度塌陷 */
 .grid {

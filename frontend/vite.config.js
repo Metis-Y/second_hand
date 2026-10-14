@@ -26,6 +26,11 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true
         // 若后端地址/端口不同，改这里的 target
+      },
+      // 图片静态资源也代理到后端，前端 <img src="/uploads/xxx.png"> 才能加载成功
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }
