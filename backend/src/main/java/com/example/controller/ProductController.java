@@ -1,6 +1,8 @@
 package com.example.controller;
 
+import com.example.dto.PageResult;
 import com.example.dto.Result;
+import com.example.entity.Product;
 import com.example.entity.ProductCategory;
 import com.example.service.ProductService;
 import jakarta.annotation.Resource;
@@ -25,17 +27,25 @@ public class ProductController {
         return Result.success(products);
     }
 
-    //查询商品
+    //查询所有商品，按照时间排序
     @GetMapping("/products")
     public Result products(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Integer status) {
-
-        return Result.success(productService.getProducts(page, size, keyword, categoryId, status));
+        PageResult<Product> products = productService.getProducts(page, size, categoryId, status);
+        return Result.success(products);
 
     }
 
+    //按标题关键字搜索商品
+    @GetMapping("/products/search")
+    public Result searchProducts(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer status) {
+        return Result.success(productService.searchProducts(keyword, page, size, status));
+    }
 }

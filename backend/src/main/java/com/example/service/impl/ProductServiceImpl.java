@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static com.baomidou.mybatisplus.core.toolkit.Wrappers.query;
+
 @Service
 public class ProductServiceImpl implements ProductService {
 
@@ -40,21 +42,32 @@ public class ProductServiceImpl implements ProductService {
      * 分页查询商品列表：PageHelper 分页 + LambdaQueryWrapper 条件过滤
      */
     @Override
-    public PageResult getProducts(int page, int size, String keyword, Long categoryId, Integer status) {
+    public PageResult<Product> getProducts(int page, int size, Long categoryId, Integer status) {
         PageHelper.startPage(page, size);
+        //分页查询
+        List<Product> list = productMapper.selectList( Wrappers.<Product>query()
+                .eq(categoryId != null, "category_id", categoryId) //分类
+                .eq(status != null, "status", status)
+                .orderByDesc("update_time")); //降序
+        PageInfo<Product> info = new PageInfo<>(list);
+        return new PageResult<Product>(info.getList(), info.getTotal());
+
+    }
+
+    /**
+     * 按标题关键字搜索商品（分页）
+     */
+    @Override
+    public PageResult<Product> searchProducts(String keyword, int page, int size, Integer status) {
+        PageHelper.startPage(page, size);
+        //sql条件构造器
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(Product::getTitle, keyword);
-        }
-        if (categoryId != null) {
-            wrapper.eq(Product::getCategoryId, categoryId);
-        }
-        if (status != null) {
-            wrapper.eq(Product::getStatus, status);
-        }
-        wrapper.orderByDesc(Product::getId);
+        wrapper.like(Product::getTitle, keyword); //模糊匹配
+        wrapper.orderByDesc(Product::getUpdateTime); //降序
         List<Product> list = productMapper.selectList(wrapper);
         PageInfo<Product> info = new PageInfo<>(list);
-        return new PageResult(info.getList(), info.getTotal());
+
+        return new PageResult<>(info.getList(), info.getTotal());
     }
+
 }

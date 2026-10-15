@@ -17,7 +17,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getCategories, getProducts } from '@/api'
+import { getCategories, getProducts, searchProducts } from '@/api'
 import ProductCard from '@/components/ProductCard.vue'
 
 const route = useRoute()
@@ -40,12 +40,10 @@ const loading = ref(false)        // 加载中状态，驱动 v-loading 遮罩
 async function load() {
   loading.value = true
   try {
-    const res = await getProducts({
-      page: page.value,
-      size,
-      keyword: keyword.value,
-      categoryId: activeCategory.value
-    })
+    const base = { page: page.value, size, status: 1 }
+    const res = keyword.value
+      ? await searchProducts({ ...base, keyword: keyword.value })
+      : await getProducts({ ...base, categoryId: activeCategory.value })
     list.value = res.list
     total.value = res.total
   } finally {
@@ -190,7 +188,7 @@ watch(
 /* 商品网格：宽屏 4 列；min-height 防止加载时页面高度塌陷 */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   min-height: 200px;
 }
