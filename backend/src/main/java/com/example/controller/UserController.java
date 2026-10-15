@@ -16,23 +16,25 @@ import org.springframework.web.bind.annotation.RestController;
  * 对应接口文档：POST /api/auth/register、POST /api/auth/login
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api")
 public class UserController {
 
     @Resource
     private UserService userService;
 
     /** 用户注册 */
-    @PostMapping("/register")
+    @PostMapping("/auth/register")
     public Result register(@RequestBody @Valid User user) {
         UserDTO userDTO = userService.register(user);
         return Result.success(userDTO);
     }
 
     /** 用户登录 */
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public Result login(@RequestBody @Valid User user) {
         UserDTO userDTO = userService.login(user);
         return Result.success(userDTO);
     }
+
+
 }

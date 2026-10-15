@@ -29,7 +29,7 @@ const keyword = ref('')           // 当前搜索关键字
 const list = ref([])              // 当前页商品
 const total = ref(0)              // 商品总数（分页器用）
 const page = ref(1)               // 当前页码
-const size = 12                   // 每页条数（常量，不需要响应式）
+const size = 10                   // 每页条数（常量，不需要响应式）
 const loading = ref(false)        // 加载中状态，驱动 v-loading 遮罩
 
 /**
