@@ -1,6 +1,7 @@
 package com.example.service;
 
 import com.example.dto.PageResult;
+import com.example.dto.ProductDetailVO;
 import com.example.entity.Product;
 import com.example.entity.ProductCategory;
 
@@ -30,4 +31,6 @@ public interface ProductService {
      * @param status  商品状态，可空
      */
     PageResult<Product> searchProducts(String keyword, int page, int size, Integer status);
+
+    ProductDetailVO getProductById(Long id);
 }

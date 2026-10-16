@@ -40,7 +40,7 @@ export function register(data) {
  */
 export function getCategories() {
   if (USE_MOCK) return mock.getCategories()
-  return request.get('/categories')
+  return request.get('/products/categories')
 }
 
 // ---------- 商品 ----------
@@ -53,6 +53,16 @@ export function getCategories() {
 export function getProducts(params) {
   if (USE_MOCK) return mock.getProducts(params)
   return request.get('/products', { params })
+}
+
+/**
+ * 按标题关键字搜索商品（首页搜索框专用）
+ * @param {{keyword: string, page?: number, size?: number, status?: number}} params
+ * @returns {Promise<{list: Array, total: number}>}
+ */
+export function searchProducts(params) {
+  if (USE_MOCK) return mock.getProducts(params)
+  return request.get('/products/search', { params })
 }
 
 /**

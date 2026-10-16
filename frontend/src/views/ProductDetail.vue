@@ -58,16 +58,16 @@ async function load() {
   loading.value = true
   try {
     product.value = await getProduct(productId)
-    const rev = await getProductReviews(productId)
-    reviews.value = rev.list || []
-    if (userStore.isLogin) {
-      favorited.value = await isFavorite(productId)
-    }
   } catch (e) {
     ElMessage.error(e.message || '加载失败')
-  } finally {
     loading.value = false
+    return
   }
+  try { const rev = await getProductReviews(productId); reviews.value = rev.list || [] } catch { /* 评价接口未就绪 */ }
+  if (userStore.isLogin) {
+    try { favorited.value = await isFavorite(productId) } catch { /* 收藏接口未就绪 */ }
+  }
+  loading.value = false
 }
 
 /**
@@ -138,7 +138,7 @@ onMounted(load)
           <el-tag :type="statusTagType" effect="light">{{ statusText }}</el-tag>
         </div>
         <div class="info text-muted">
-          分类：{{ product.categoryId }} · 发布时间：{{ product.createTime }}
+          分类：{{ product.categoryName || '未知' }} · 发布时间：{{ product.createTime }}
         </div>
 
         <!-- 卖家信息条 -->
