@@ -11,7 +11,6 @@ import com.example.utils.CurrentHolder;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -58,9 +57,6 @@ public class FavoriteServiceImpl implements FavoriteService {
     public PageResult<Favorite> getFavorites() {
         Long userId = getUserId();
         List<Favorite> list = favoriteMapper.selectFavoritesWithProduct(userId);
-        if (list == null) {
-            list = new ArrayList<>();
-        }
         // 收藏列表里的每一项自然都是已收藏
         for (Favorite f : list) {
             f.setFavorited(true);

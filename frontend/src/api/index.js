@@ -143,8 +143,8 @@ export function removeFavorite(productId) {
 // ---------- 订单 ----------
 
 /**
- * 查询订单列表
- * @param {{role?: 'buyer'|'seller', status?: number|string}} params
+ * 分页查询订单列表
+ * @param {{role?: 'buyer'|'seller', status?: number|string, page?: number, size?: number}} params
  *        role=buyer 查"我买到的"，role=seller 查"我卖出的"
  * @returns {Promise<{list: Array, total: number}>}
  */

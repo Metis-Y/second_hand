@@ -58,9 +58,19 @@ request.interceptors.response.use(
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       ElMessage.error('登录已过期，请重新登录')
+      // 记住当前地址，登录成功后跳回；已处于登录/注册页则不带 redirect，避免原地循环
+      const current = window.location.pathname + window.location.search
+      let redirect = encodeURIComponent(current)
+      if (current.startsWith('/login') || current.startsWith('/register')) {
+        redirect = ''
+      }
       // 延迟 600ms 让用户能看清提示，再整页跳转（刷新以重置所有内存状态）
       setTimeout(() => {
-        window.location.href = '/login'
+        if (redirect) {
+          window.location.href = `/login?redirect=${redirect}`
+        } else {
+          window.location.href = '/login'
+        }
       }, 600)
       return Promise.reject(new Error('未登录或登录已过期'))
     }

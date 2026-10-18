@@ -1,5 +1,6 @@
 package com.example.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.dto.UserDTO;
 import com.example.entity.User;
@@ -61,13 +62,8 @@ public class UserServiceImpl implements UserService {
 
     /** 组装返回 DTO：token + 用户基础信息（不含密码、手机号、性别） */
     private UserDTO toUserDTO(User user, String token) {
-        UserDTO userDTO = new UserDTO();
+        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
         userDTO.setToken(token);
-        userDTO.setId(user.getId());
-        userDTO.setUsername(user.getUsername());
-        userDTO.setNickname(user.getNickname());
-        userDTO.setAvatar(user.getAvatar());
-        userDTO.setRole(user.getRole());
         return userDTO;
     }
 }

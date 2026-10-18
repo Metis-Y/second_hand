@@ -427,14 +427,18 @@ export async function createOrder(productId) {
  *        role=buyer 查 buyerId 是我；role=seller 查 sellerId 是我
  * @returns {{list: Array, total: number}} 每条订单附带 product 商品信息
  */
-export async function getOrders({ role = 'buyer', status } = {}) {
+export async function getOrders({ role = 'buyer', status, page = 1, size = 10 } = {}) {
   await delay()
   const u = currentUser()
   let list = readList('mock_orders').filter((o) => (role === 'buyer' ? o.buyerId === u.id : o.sellerId === u.id))
   if (status !== undefined && status !== null && status !== '') list = list.filter((o) => o.status === Number(status))
-  // 关联商品；商品已被删除时给个占位对象，保证列表不报错
-  list = list.map((o) => ({ ...o, product: findProduct(o.productId) || { title: '商品已删除' } }))
-  return { list, total: list.length }
+  // 联表带出商品标题（扁平字段 productTitle）；商品已删除时给占位文案
+  list = list.map((o) => ({ ...o, productTitle: findProduct(o.productId).title }))
+  // 先取总数再切片，total 用于前端分页组件
+  const total = list.length
+  const start = (Number(page) - 1) * Number(size)
+  const pageList = list.slice(start, start + Number(size))
+  return { list: pageList, total }
 }
 
 /**

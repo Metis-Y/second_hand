@@ -31,8 +31,11 @@ import { getOrders, updateOrderStatus, createReview } from '@/api'
 
 const role = ref('buyer')        // 视角：buyer 我买到的 / seller 我卖出的
 const statusFilter = ref('')     // 状态筛选，'' 表示全部
-const list = ref([])             // 订单列表
+const list = ref([])             // 当前页订单
 const loading = ref(false)       // 表格加载遮罩
+const page = ref(1)              // 当前页码
+const size = 10                  // 每页条数（常量）
+const total = ref(0)             // 符合条件的订单总数（分页器用）
 
 // ---- 评价弹窗相关状态 ----
 const reviewDialog = ref(false)  // 弹窗显隐
@@ -49,8 +52,9 @@ const statusType = { 0: 'warning', 1: 'primary', 2: 'success', 3: 'info' }
 async function load() {
   loading.value = true
   try {
-    const res = await getOrders({ role: role.value, status: statusFilter.value })
+    const res = await getOrders({ role: role.value, status: statusFilter.value || undefined, page: page.value, size })
     list.value = res.list
+    total.value = res.total
   } finally {
     loading.value = false
   }
@@ -64,11 +68,22 @@ async function load() {
 function switchRole(r) {
   role.value = r
   statusFilter.value = ''
+  page.value = 1
   load()
 }
 
-/** 状态筛选变化后重新查询 */
+/** 状态筛选变化后重新查询（重置到第 1 页） */
 function onStatusFilter() {
+  page.value = 1
+  load()
+}
+
+/**
+ * 分页器翻页回调
+ * @param {number} p 目标页码
+ */
+function onPage(p) {
+  page.value = p
   load()
 }
 
@@ -152,7 +167,7 @@ onMounted(load)
         <el-table-column label="商品" min-width="160">
           <template #default="{ row }">
             <router-link class="product-link" :to="`/product/${row.productId}`">
-              {{ row.product?.title || '商品已删除' }}
+              {{ row.productTitle || '商品已删除' }}
             </router-link>
           </template>
         </el-table-column>
@@ -200,6 +215,18 @@ onMounted(load)
       </el-table>
     </div>
 
+    <!-- ===== 分页器：总数超过一页才渲染 ===== -->
+    <div v-if="total > size" class="pager">
+      <el-pagination
+        background
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="size"
+        :current-page="page"
+        @current-change="onPage"
+      />
+    </div>
+
     <!-- ===== 评价弹窗：星级 + 文本，内容选填（最多 500 字） ===== -->
     <el-dialog v-model="reviewDialog" title="评价订单" width="420px">
       <div class="review-form">
@@ -227,6 +254,11 @@ onMounted(load)
 }
 .product-link {
   color: var(--sh-primary);
+}
+.pager {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 /* 评价弹窗里"评分："与星级横向对齐 */
 .review-form .row {

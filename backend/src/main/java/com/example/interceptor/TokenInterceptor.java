@@ -1,5 +1,7 @@
 package com.example.interceptor;
 
+import cn.hutool.json.JSONUtil;
+import com.example.dto.Result;
 import com.example.utils.CurrentHolder;
 import com.example.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -59,7 +61,7 @@ public class TokenInterceptor implements HandlerInterceptor {
     private boolean unauthorized(HttpServletResponse response) throws Exception {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"code\":0,\"message\":\"未登录或登录已过期\",\"data\":null}");
+        response.getWriter().write(JSONUtil.toJsonStr(Result.error("未登录或登录已过期")));
         return false;
     }
     
