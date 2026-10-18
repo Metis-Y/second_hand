@@ -8,19 +8,25 @@
   ├──────────────┤
   │   title      │  商品标题（最多两行，超出省略）
   │ ￥price  tag │  价格 + 状态标签（在售/已售出/已下架/审核中）
-  │  nickname    │  卖家昵称（灰色小字）
+  │ sellerNickname │ 卖家昵称（灰色小字）
   └──────────────┘
   通过 props.product 接收数据，不关心数据来源（首页或收藏页均可复用）。
 -->
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { addFavorite, removeFavorite } from '@/api'
+import { useUserStore } from '@/stores/user'
 
-// 父组件必须传入完整的商品对象：id / title / price / cover / status / nickname
+// 父组件必须传入完整的商品对象：id / title / price / cover / status / sellerNickname / favorited
 const props = defineProps({
-  product: { type: Object, required: true }
+  product: { type: Object, required: true },
+  // 是否展示收藏心形按钮（首页开启，收藏页用自己的「取消收藏」按钮，不开启）
+  showFavorite: { type: Boolean, default: false }
 })
 const router = useRouter()
+const userStore = useUserStore()
 
 // 商品状态码 → 中文文案 / 标签配色，与后端约定保持一致
 const statusMap = { 0: '已下架', 1: '在售', 2: '已售出', 3: '审核中' }
@@ -34,17 +40,47 @@ const statusTagType = computed(() => statusType[props.product.status] ?? 'info')
 function goDetail() {
   router.push(`/product/${props.product.id}`)
 }
+
+/** 收藏 / 取消收藏：未登录先跳登录，已登录调接口并在本地翻转状态 */
+async function toggleFavorite() {
+  if (!userStore.isLogin) {
+    ElMessage.warning('请先登录')
+    router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+    return
+  }
+  try {
+    if (props.product.favorited) {
+      await removeFavorite(props.product.id)
+      props.product.favorited = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await addFavorite(props.product.id)
+      props.product.favorited = true
+      ElMessage.success('已收藏')
+    }
+  } catch (e) {
+    ElMessage.error(e.message || '操作失败')
+  }
+}
 </script>
 
 <template>
   <!-- 整张卡片绑定点击事件，hover 时上浮（样式见 .product-card:hover） -->
   <div class="product-card card" @click="goDetail">
     <!-- 封面图；图片地址失效时走 #error 插槽，显示标题首字占位 -->
-    <el-image class="cover" :src="product.cover" fit="cover">
+    <el-image class="cover" :src="product.cover" fit="cover" lazy>
       <template #error>
         <div class="img-fallback">{{ product.title?.[0] || '图' }}</div>
       </template>
     </el-image>
+    <!-- 收藏心形按钮：仅当父组件传 show-favorite 时展示 -->
+    <button
+      v-if="showFavorite"
+      class="fav-btn"
+      :class="{ on: product.favorited }"
+      :title="product.favorited ? '取消收藏' : '收藏'"
+      @click.stop="toggleFavorite"
+    >{{ product.favorited ? '♥' : '♡' }}</button>
     <div class="body">
       <!-- 标题固定两行高度，保证同排卡片对齐 -->
       <div class="title">{{ product.title }}</div>
@@ -52,17 +88,38 @@ function goDetail() {
         <span class="price">￥{{ product.price }}</span>
         <el-tag :type="statusTagType" size="small" effect="light">{{ statusText }}</el-tag>
       </div>
-      <div class="text-muted">{{ product.nickname }}</div>
+      <div class="text-muted">{{ product.sellerNickname }}</div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .product-card {
+  position: relative;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
   padding: 0;
   overflow: hidden;
+}
+/* 收藏心形按钮：叠在封面右上角，红心=已收藏 */
+.fav-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 15px;
+  line-height: 28px;
+  text-align: center;
+  cursor: pointer;
+}
+.fav-btn.on {
+  color: #f56c6c;
 }
 /* hover 上浮 + 阴影加强，提示可点击 */
 .product-card:hover {

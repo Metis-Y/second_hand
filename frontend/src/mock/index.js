@@ -227,7 +227,7 @@ export async function getCategories() {
 /**
  * 分页查询商品列表（模拟后端的筛选 + 排序 + 分页）
  * @param {{page?: number, size?: number, keyword?: string, categoryId?: number|null, status?: number}} 查询条件
- * @returns {{list: Array, total: number}} list 中每条都补了 nickname 卖家昵称
+ * @returns {{list: Array, total: number}} list 中每条都补了 sellerNickname / favorited
  */
 export async function getProducts({ page = 1, size = 12, keyword = '', categoryId = null, status } = {}) {
   await delay()
@@ -243,7 +243,7 @@ export async function getProducts({ page = 1, size = 12, keyword = '', categoryI
   // 先取总数再切片，total 用于前端分页组件
   const total = list.length
   const start = (Number(page) - 1) * Number(size)
-  const pageList = list.slice(start, start + Number(size)).map((p) => ({ ...p, nickname: nicknameOf(p.userId) }))
+  const pageList = list.slice(start, start + Number(size)).map((p) => ({ ...p, sellerNickname: nicknameOf(p.userId), favorited: favoritedByCurrent(p.id) }))
   return { list: pageList, total }
 }
 
@@ -257,8 +257,10 @@ export async function getProduct(id) {
   if (!p) throw new Error('商品不存在')
   return {
     ...p,
-    nickname: nicknameOf(p.userId),
-    seller: { id: p.userId, nickname: nicknameOf(p.userId), avatar: avatarOf(p.userId) }
+    sellerId: p.userId,
+    sellerNickname: nicknameOf(p.userId),
+    sellerAvatar: avatarOf(p.userId),
+    favorited: favoritedByCurrent(id)
   }
 }
 
@@ -334,7 +336,7 @@ function markSold(productId) {
 
 /**
  * 查询当前用户的收藏列表。
- * 收藏只存 { userId, productId, createTime }，这里再关联出商品完整信息；
+ * 收藏只存 { userId, productId, createTime }，这里再关联出商品字段（title/price/cover/status）；
  * 已删除的商品会被过滤掉（map 返回 null 后被 filter(Boolean) 去掉）。
  */
 export async function getFavorites() {
@@ -344,7 +346,19 @@ export async function getFavorites() {
   const list = favs
     .map((f) => {
       const p = findProduct(f.productId)
-      return p ? { ...p, nickname: nicknameOf(p.userId), favoriteTime: f.createTime } : null
+      if (!p) return null
+      // 收藏记录对象：id=收藏ID、productId=商品ID，商品字段从 product 带出
+      return {
+        id: f.id,
+        userId: f.userId,
+        productId: f.productId,
+        createTime: f.createTime,
+        title: p.title,
+        price: p.price,
+        cover: p.cover,
+        status: p.status,
+        favorited: true
+      }
     })
     .filter(Boolean)
   return { list, total: list.length }
@@ -372,10 +386,10 @@ export async function removeFavorite(productId) {
 }
 
 /**
- * 判断当前用户是否已收藏某商品（同步返回，详情页初始化用）
+ * 内部工具：当前用户是否已收藏某商品，用于列表/详情拼 favorited 字段
  * @returns {boolean}
  */
-export function isFavorite(productId) {
+function favoritedByCurrent(productId) {
   const u = currentUser()
   return readList('mock_favorites').some((f) => f.userId === u.id && f.productId === Number(productId))
 }

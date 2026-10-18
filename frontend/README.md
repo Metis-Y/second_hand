@@ -60,7 +60,7 @@ frontend/
 
 ## 四、与后端的接口约定（联调时请按此对齐）
 
-- 统一响应格式：`{ "code": 200, "message": "ok", "data": ... }`，`code=200` 成功、`401` 未登录。
+- 统一响应格式：`{ "code": 1, "message": "ok", "data": ... }`，`code=1` 成功、`code=0` 失败。
 - 登录后前端在请求头带 `Authorization: Bearer <token>`。
 - 列表接口的 `data` 统一为 `{ "list": [...], "total": 10 }`。
 
@@ -68,17 +68,17 @@ frontend/
 | ------- | ----------------------------------------------------------- | ------------------------------------------------------ | --------------- |
 | 注册      | `POST /api/auth/register`                                   | body: `{username, password, nickname, phone}`          |                 |
 | 登录      | `POST /api/auth/login`                                      | body: `{username, password}` → data: `{token, user}`   |                 |
-| 分类列表    | `GET /api/categories`                                       | data: 分类数组                                             |                 |
-| 商品列表    | `GET /api/products`                                         | query: `page,size,keyword,categoryId,status`           |                 |
-| 商品详情    | `GET /api/products/{id}`                                    | 含 `images`、`seller`                                    |                 |
+| 分类列表    | `GET /api/products/categories`                                       | data: 分类数组                                             |                 |
+| 商品列表    | `GET /api/products`                                         | query: `page,size,categoryId,status`                   |                 |
+| 搜索商品    | `GET /api/products/search`                                  | query: `keyword,page,size,status`                      |                 |
+| 商品详情    | `GET /api/products/{id}`                                    | 含 `images`、`sellerNickname`、`sellerAvatar`、`favorited`                                    |                 |
 | 发布商品    | `POST /api/products`                                        | body 含 `title, categoryId, price, description, images` |                 |
 | 编辑/删除   | `PUT /api/products/{id}` / `DELETE /api/products/{id}`      |                                                        |                 |
 | 我发布的    | `GET /api/products/my`                                      |                                                        |                 |
 | 收藏列表    | `GET /api/favorites`                                        |                                                        |                 |
-| 收藏/取消   | `POST /api/favorites` / `DELETE /api/favorites/{productId}` | body: `{productId}`                                    |                 |
-| 是否已收藏   | `GET /api/favorites/check/{productId}`                      | data: boolean                                          |                 |
+| 收藏/取消   | `POST /api/favorites/{productId}` / `DELETE /api/favorites/{productId}` | 路径参数 productId                                    |                 |
 | 下单      | `POST /api/orders`                                          | body: `{productId}`                                    |                 |
-| 订单列表    | `GET /api/orders`                                           | query: `role=buyer                                     | seller, status` |
+| 订单列表    | `GET /api/orders`                                           | query: `role=buyer` 或 `role=seller`、`status`          |                 |
 | 改订单状态   | `PUT /api/orders/{id}/status`                               | body: `{status}`                                       |                 |
 | 发表评价    | `POST /api/reviews`                                         | body: `{orderId, score, content}`                      |                 |
 | 商品评价    | `GET /api/reviews/product/{productId}`                      |                                                        |                 |

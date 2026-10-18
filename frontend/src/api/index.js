@@ -128,7 +128,7 @@ export function getFavorites() {
  */
 export function addFavorite(productId) {
   if (USE_MOCK) return mock.addFavorite(productId)
-  return request.post('/favorites', { productId })
+  return request.post(`/favorites/${productId}`)
 }
 
 /**
@@ -138,17 +138,6 @@ export function addFavorite(productId) {
 export function removeFavorite(productId) {
   if (USE_MOCK) return mock.removeFavorite(productId)
   return request.delete(`/favorites/${productId}`)
-}
-
-/**
- * 查询某商品是否已被当前用户收藏（详情页初始化收藏按钮状态）
- * @param {number|string} productId 商品 ID
- * @returns {Promise<boolean>}
- */
-export function isFavorite(productId) {
-  // mock 的 isFavorite 是同步函数，包一层 Promise 保持调用方式一致
-  if (USE_MOCK) return Promise.resolve(mock.isFavorite(productId))
-  return request.get(`/favorites/check/${productId}`)
 }
 
 // ---------- 订单 ----------

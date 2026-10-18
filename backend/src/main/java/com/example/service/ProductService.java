@@ -1,14 +1,12 @@
 package com.example.service;
 
 import com.example.dto.PageResult;
-import com.example.dto.ProductDetailVO;
 import com.example.entity.Product;
 import com.example.entity.ProductCategory;
 
 import java.util.List;
 
 public interface ProductService {
-
 
     List<ProductCategory> getProductCategories();
 
@@ -20,7 +18,7 @@ public interface ProductService {
      * @param categoryId 分类ID，可空
      * @param status     商品状态，可空
      */
-    PageResult<Product> getProducts(int page, int size,  Long categoryId, Integer status);
+    PageResult<Product> getProducts(int page, int size, Long categoryId, Integer status);
 
     /**
      * 按标题关键字搜索商品（分页）
@@ -32,5 +30,16 @@ public interface ProductService {
      */
     PageResult<Product> searchProducts(String keyword, int page, int size, Integer status);
 
-    ProductDetailVO getProductById(Long id);
+    /**
+     * 根据 id 获取商品详情（含 images、categoryName、seller）
+     */
+    Product getProductById(Long id);
+
+    /**
+     * 发布商品：新增商品记录并批量写入多张商品图片
+     *
+     * @param req 发布参数（标题、分类、价格、描述、图片列表）
+     * @return 新商品 id
+     */
+    Long createProduct(Product req);
 }

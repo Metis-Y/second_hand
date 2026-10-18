@@ -26,7 +26,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getProduct, getProductReviews, isFavorite, addFavorite, removeFavorite, createOrder } from '@/api'
+import { getProduct, getProductReviews, addFavorite, removeFavorite, createOrder } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -64,9 +64,8 @@ async function load() {
     return
   }
   try { const rev = await getProductReviews(productId); reviews.value = rev.list || [] } catch { /* 评价接口未就绪 */ }
-  if (userStore.isLogin) {
-    try { favorited.value = await isFavorite(productId) } catch { /* 收藏接口未就绪 */ }
-  }
+  // 收藏状态由商品详情直接带回来（getProduct 返回的 favorited 字段）
+  favorited.value = !!product.value.favorited
   loading.value = false
 }
 
@@ -143,8 +142,8 @@ onMounted(load)
 
         <!-- 卖家信息条 -->
         <div class="seller">
-          <el-avatar :size="36" :src="product.seller?.avatar">{{ product.seller?.nickname?.[0] }}</el-avatar>
-          <span>{{ product.seller?.nickname }}</span>
+          <el-avatar :size="36" :src="product.sellerAvatar">{{ product.sellerNickname?.[0] }}</el-avatar>
+          <span>{{ product.sellerNickname }}</span>
         </div>
 
         <!-- 操作区：收藏（星标随状态切换实心/空心）+ 购买 -->

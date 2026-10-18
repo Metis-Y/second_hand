@@ -106,6 +106,10 @@ async function loadProduct() {
  */
 async function submit() {
   await formRef.value.validate()
+  if (images.value.length === 0) {
+    ElMessage.warning('请至少上传一张图片')
+    return
+  }
   const payload = {
     title: form.title,
     categoryId: form.categoryId,
@@ -173,6 +177,7 @@ onMounted(() => {
             </div>
           </div>
           <span v-if="uploading" class="text-muted">上传中…</span>
+          <div class="text-muted">至少上传 1 张图片，第一张将作为封面</div>
           <!-- 真实的文件选择框，被隐藏，仅用 JS 触发；multiple 支持一次选多张 -->
           <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="onFiles" />
         </el-form-item>

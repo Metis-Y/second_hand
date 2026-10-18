@@ -71,12 +71,10 @@ function onPage(p) {
 }
 
 // 首次进入：并行准备分类列表，并从 URL 读取关键字后加载商品
-onMounted(async () => {
-  try {
-    categories.value = await getCategories()
-  } catch { /* ignore */ }
+onMounted(() => {
+  getCategories().then((l) => (categories.value = l)).catch(() => { /* ignore */ })
   keyword.value = route.query.keyword || ''
-  load()
+  load() // 不等待分类，商品列表先加载
 })
 
 // 顶部搜索框修改 query 时刷新（从别的页面搜索跳过来也会触发）
@@ -113,7 +111,7 @@ watch(
     <!-- ===== 商品宫格：无数据展示空状态，否则展示卡片网格 ===== -->
     <el-empty v-if="!loading && list.length === 0" description="暂无商品" />
     <div v-else v-loading="loading" class="grid">
-      <ProductCard v-for="p in list" :key="p.id" :product="p" />
+      <ProductCard v-for="p in list" :key="p.id" :product="p" show-favorite />
     </div>
 
     <!-- ===== 分页器：总数超过一页才渲染 ===== -->

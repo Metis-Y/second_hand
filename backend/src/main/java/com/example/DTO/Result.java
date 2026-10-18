@@ -7,34 +7,7 @@ import lombok.Data;
  * { code, message, data }
  * code = 200 表示成功，其它值表示失败
  */
-/*
-@Data
-public class Result<T> {
 
-    private Integer code;
-    private String message;
-    private T data;
-
-    public static <T> Result<T> success() {
-        return success(null);
-    }
-
-    public static <T> Result<T> success(T data) {
-        Result<T> r = new Result<>();
-        r.code = 200;
-        r.message = "ok";
-        r.data = data;
-        return r;
-    }
-
-    public static <T> Result<T> error(int code, String message) {
-        Result<T> r = new Result<>();
-        r.code = code;
-        r.message = message;
-        r.data = null;
-        return r;
-    }
-}*/
 @Data
 public class Result {
 
