@@ -44,17 +44,14 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * 下单购买商品：校验商品在售且非本人发布，落单后把商品置为已售出
+     * 下单购买商品：非本人发布且在售才可下单，下单后商品置为"已售出"
      */
     @Override
     @Transactional
-    public Order createOrder(Long productId) {
+    public void createOrder(Long productId) {
         Long userId = CurrentHolder.getCurrentId();
         Product product = productMapper.selectById(productId);
-        if (product == null) {
-            throw new BusinessException("商品不存在");
-        }
-        if (product.getUserId().equals(userId)) {
+        if (userId.equals(product.getUserId())) {
             throw new BusinessException("不能购买自己发布的商品");
         }
         if (product.getStatus() != 1) {
@@ -65,13 +62,36 @@ public class OrderServiceImpl implements OrderService {
         order.setSellerId(product.getUserId());
         order.setProductId(productId);
         order.setPrice(product.getPrice());
-        order.setStatus(0);
+        order.setStatus(1); // 买家下单 → 1 交易中
         orderMapper.insert(order);
-
-        // 下单成功，商品置为"已售出"
-        product.setStatus(2);
+        product.setStatus(2); // 商品置为已售出，别人不能再下单
         productMapper.updateById(product);
+    }
 
-        return orderMapper.selectById(order.getId());
+    /**
+     * 修改订单状态：卖家确认完成，任一方取消；取消时把商品放回在售
+     */
+    @Override
+    @Transactional
+    public void changeStatus(Long orderId, Integer status) {
+        Long userId = CurrentHolder.getCurrentId();
+        Order order = orderMapper.selectById(orderId);
+        boolean isBuyer = userId.equals(order.getBuyerId());
+        boolean isSeller = userId.equals(order.getSellerId());
+        // 仅买卖双方能操作，且仅交易中(1)可继续：卖家→已完成(2)，任一方→已取消(3)
+        boolean legal = ((isBuyer || isSeller) && order.getStatus() == 1);
+        if (!legal) {
+            throw new BusinessException("当前状态不能进行该操作");
+        }
+        order.setStatus(status);
+        orderMapper.updateById(order);
+        // 取消后设置之商品状态
+        if (status == 3) {
+            Product product = productMapper.selectById(order.getProductId());
+            product.setStatus(1);
+            productMapper.updateById(product);
+        }
+
+
     }
 }

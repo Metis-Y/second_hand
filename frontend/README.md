@@ -77,13 +77,13 @@ frontend/
 | 我发布的    | `GET /api/products/my`                                      |                                                        |                 |
 | 收藏列表    | `GET /api/favorites`                                        |                                                        |                 |
 | 收藏/取消   | `POST /api/favorites/{productId}` / `DELETE /api/favorites/{productId}` | 路径参数 productId                                    |                 |
-| 下单      | `POST /api/orders`                                          | body: `{productId}`                                    |                 |
+| 下单      | `POST /api/orders/{productId}`                              | 路径参数 productId                                    |                 |
 | 订单列表    | `GET /api/orders`                                           | query: `role=buyer` 或 `role=seller`、`status`          |                 |
-| 改订单状态   | `PUT /api/orders/{id}/status`                               | body: `{status}`                                       |                 |
+| 改订单状态   | `PUT /api/orders/{id}/status/{status}`                      | 路径参数 id、status（2已完成 / 3已取消）               |                 |
 | 发表评价    | `POST /api/reviews`                                         | body: `{orderId, score, content}`                      |                 |
 | 商品评价    | `GET /api/reviews/product/{productId}`                      |                                                        |                 |
 | 用户收到的评价 | `GET /api/reviews/user/{userId}`                            |                                                        |                 |
 | 图片上传    | `POST /api/upload`                                          | multipart，字段名 `file`，data: `{url}`                     |                 |
 
-> 订单状态码：`0 待确认`、`1 交易中`、`2 已完成`、`3 已取消`。
+> 订单状态码：`1 交易中`、`2 已完成`、`3 已取消`。
 > 商品状态码：`0 下架`、`1 在售`、`2 已售出`、`3 审核中`。

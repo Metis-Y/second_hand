@@ -47,7 +47,7 @@ public class Order {
     private BigDecimal price;
 
     /**
-     * 订单状态：0待确认，1交易中，2已完成，3已取消
+     * 订单状态：1交易中，2已完成，3已取消
      */
     private Integer status;
 

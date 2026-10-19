@@ -14,8 +14,6 @@
   │  └──────────────────────┘  └──────────────────────────┘   │
   ├───────────────────────────────────────────────────────────┤
   │ section 商品描述（保留换行的纯文本）                        │
-  ├───────────────────────────────────────────────────────────┤
-  │ section 商品评价（条数 + 列表：评价人 / 星级 / 内容 / 时间） │
   └───────────────────────────────────────────────────────────┘
   权限相关的按钮禁用逻辑（isMine / canBuy）：
     · 自己发布的商品 → 购买按钮禁用并提示"这是你发布的商品"
@@ -26,7 +24,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getProduct, getProductReviews, addFavorite, removeFavorite, createOrder } from '@/api'
+import { getProduct, addFavorite, removeFavorite, createOrder } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -37,7 +35,6 @@ const userStore = useUserStore()
 const productId = route.params.id
 const loading = ref(true)      // 首屏加载遮罩
 const product = ref(null)      // 商品详情对象（含 images、seller）
-const reviews = ref([])        // 该商品的评价列表
 const favorited = ref(false)   // 当前用户是否已收藏
 
 // 商品状态码 → 文案 / 标签配色
@@ -51,7 +48,7 @@ const isMine = computed(() => product.value && userStore.user && product.value.u
 const canBuy = computed(() => product.value && product.value.status === 1 && !isMine.value)
 
 /**
- * 加载详情：依次取商品详情、商品评价；已登录时再查收藏状态。
+ * 加载详情：取商品详情，收藏状态由详情接口一并返回。
  * 收藏状态只在登录后查询，未登录保持 false，避免无谓的 401。
  */
 async function load() {
@@ -63,7 +60,6 @@ async function load() {
     loading.value = false
     return
   }
-  try { const rev = await getProductReviews(productId); reviews.value = rev.list || [] } catch { /* 评价接口未就绪 */ }
   // 收藏状态由商品详情直接带回来（getProduct 返回的 favorited 字段）
   favorited.value = !!product.value.favorited
   loading.value = false
@@ -167,20 +163,7 @@ onMounted(load)
       <p class="desc">{{ product.description || '暂无描述' }}</p>
     </div>
 
-    <!-- ===== 商品评价区：列表逐条展示评价人、星级、内容、时间 ===== -->
-    <div class="card section">
-      <h3>商品评价（{{ reviews.length }}）</h3>
-      <el-empty v-if="reviews.length === 0" description="暂无评价" :image-size="80" />
-      <div v-for="r in reviews" :key="r.id" class="review-item">
-        <div class="review-head">
-          <span class="reviewer">{{ r.reviewerNickname || '匿名' }}</span>
-          <!-- disabled：详情页只读展示，不可修改评分 -->
-          <el-rate :model-value="r.score" disabled />
-        </div>
-        <p class="review-content">{{ r.content || '（未填写内容）' }}</p>
-        <div class="text-muted">{{ r.createTime }}</div>
-      </div>
-    </div>
+    
   </div>
 </template>
 
@@ -243,23 +226,7 @@ onMounted(load)
   line-height: 1.7;
   white-space: pre-wrap;
 }
-/* 单条评价：下划线分隔 */
-.review-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-.review-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.reviewer {
-  font-weight: 600;
-}
-.review-content {
-  color: #606266;
-  margin: 6px 0;
-}
+
 /* 窄屏改为上下单列，图片在上信息在下 */
 @media (max-width: 860px) {
   .detail {

@@ -331,6 +331,15 @@ function markSold(productId) {
     saveProducts()
   }
 }
+/** 内部函数：把商品放回"在售"（status = 1），取消订单时调用 */
+function markOnSale(productId) {
+  const p = findProduct(productId)
+  if (p) {
+    p.status = 1
+    p.updateTime = now()
+    saveProducts()
+  }
+}
 
 // ---------- 收藏 ----------
 
@@ -398,7 +407,7 @@ function favoritedByCurrent(productId) {
 
 /**
  * 下单：校验商品存在、不能买自己的、商品必须在售；
- * 下单成功后把商品置为"已售出"，新订单状态为 0（待确认）。
+ * 下单成功后把商品置为"已售出"，新订单状态为 1（交易中）。
  * @throws {Error} 商品不存在 / 不能购买自己发布的商品 / 该商品当前不可购买
  */
 export async function createOrder(productId) {
@@ -411,7 +420,7 @@ export async function createOrder(productId) {
   const orders = readList('mock_orders')
   const order = {
     id: Date.now(), buyerId: u.id, sellerId: p.userId, productId: p.id,
-    price: p.price, status: 0, createTime: now(), updateTime: now(),
+    price: p.price, status: 1, createTime: now(), updateTime: now(),
     // 冗余存双方昵称，列表页就不用再逐个查用户
     buyerNickname: u.nickname, sellerNickname: nicknameOf(p.userId)
   }
@@ -442,7 +451,7 @@ export async function getOrders({ role = 'buyer', status, page = 1, size = 10 } 
 }
 
 /**
- * 修改订单状态（0 待确认 / 1 交易中 / 2 已完成 / 3 已取消）
+ * 修改订单状态（1 交易中 / 2 已完成 / 3 已取消）
  * @throws {Error} 订单不存在
  */
 export async function updateOrderStatus(id, status) {
@@ -453,6 +462,10 @@ export async function updateOrderStatus(id, status) {
   order.status = Number(status)
   order.updateTime = now()
   writeList('mock_orders', orders)
+  // 取消订单：商品放回在售
+  if (Number(status) === 3) {
+    markOnSale(order.productId)
+  }
   return order
 }
 

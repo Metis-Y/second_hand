@@ -3,13 +3,15 @@ package com.example.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.example.dto.PageResult;
+import com.example.exception.BusinessException;
 import com.example.entity.Favorite;
+import com.example.entity.Order;
 import com.example.entity.Product;
 import com.example.entity.ProductCategory;
 import com.example.entity.ProductImage;
 import com.example.entity.User;
-import com.example.exception.BusinessException;
 import com.example.mapper.FavoriteMapper;
+import com.example.mapper.OrderMapper;
 import com.example.mapper.ProductCategoryMapper;
 import com.example.mapper.ProductImageMapper;
 import com.example.mapper.ProductMapper;
@@ -42,6 +44,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Resource
     private FavoriteMapper favoriteMapper;
+
+    @Resource
+    private OrderMapper orderMapper;
 
     /**
      * 查询全部分类，按 sort 升序（sort 相同时按 id 升序，保证顺序稳定）
@@ -90,12 +95,9 @@ public class ProductServiceImpl implements ProductService {
      * 根据 id 获取商品详情：单独查询分类名、卖家昵称/头像、图片（不联表）
      */
     @Override
+    @Transactional
     public Product getProductById(Long id) {
         Product product = productMapper.selectById(id);
-        if (product == null) {
-            throw new BusinessException("商品不存在");
-        }
-
         // 分类名
         ProductCategory category = productCategoryMapper.selectById(product.getCategoryId());
         product.setCategoryName(category.getName());
@@ -163,6 +165,67 @@ public class ProductServiceImpl implements ProductService {
         }
         //方便跳转到个人主页
         return product.getId();
+    }
+
+    /**
+     * 查询"我发布的"商品（分页，按发布时间倒序）
+     */
+    @Override
+    public PageResult<Product> getMyProducts(int page, int size) {
+        Long userId = CurrentHolder.getCurrentId();
+        PageHelper.startPage(page, size);
+        List<Product> list = productMapper.selectList(Wrappers.<Product>lambdaQuery()
+                .eq(Product::getUserId, userId)
+                .orderByDesc(Product::getCreateTime));
+        PageInfo<Product> info = new PageInfo<>(list);
+        return new PageResult<>(info.getList(), info.getTotal());
+    }
+
+    /**
+     * 修改商品：仅限发布者本人；图片整体重写（先删后插）
+     */
+    @Override
+    @Transactional
+    public void updateProduct(Long id, Product req) {
+        Long userId = CurrentHolder.getCurrentId();
+        Product product = productMapper.selectById(id);
+        if (!userId.equals(product.getUserId())) {
+            throw new BusinessException("无权操作该商品");
+        }
+        product.setTitle(req.getTitle());
+        product.setCategoryId(req.getCategoryId());
+        product.setPrice(req.getPrice());
+        product.setDescription(req.getDescription());
+        product.setCover(req.getImages().get(0));
+        productMapper.updateById(product);
+
+        productImageMapper.delete(Wrappers.<ProductImage>lambdaQuery().eq(ProductImage::getProductId, id));
+        for (int i = 0; i < req.getImages().size(); i++) {
+            ProductImage image = new ProductImage();
+            image.setProductId(id);
+            image.setImageUrl(req.getImages().get(i));
+            image.setSort(i);
+            productImageMapper.insert(image);
+        }
+    }
+
+    /**
+     * 删除商品：仅限发布者本人；有订单的商品不能删（订单历史要保留），
+     * 无订单时商品图片、收藏由外键 ON DELETE CASCADE 级联删除
+     */
+    @Override
+    @Transactional
+    public void deleteProduct(Long id) {
+        Long userId = CurrentHolder.getCurrentId();
+        Product product = productMapper.selectById(id);
+        if (!userId.equals(product.getUserId())) {
+            throw new BusinessException("无权操作该商品");
+        }
+        long cnt = orderMapper.selectCount(Wrappers.<Order>lambdaQuery().eq(Order::getProductId, id));
+        if (cnt > 0) {
+            throw new BusinessException("该商品已有订单，不能删除");
+        }
+        productMapper.deleteById(id);
     }
 
     // 抽出公共方法：补充卖家昵称 + 当前用户是否已收藏

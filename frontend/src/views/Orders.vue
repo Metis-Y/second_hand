@@ -5,7 +5,7 @@
   ┌─────────────────────────────────────────────────────────────┐
   │  标题「我的订单」                                             │
   │  tabs 身份切换：[ 我买到的 | 我卖出的 ]                        │
-  │  radio-group 状态筛选：[全部][待确认][交易中][已完成][已取消]   │
+  │  radio-group 状态筛选：[全部][交易中][已完成][已取消]   │
   ├─────────────────────────────────────────────────────────────┤
   │  card 订单表格 el-table                                      │
   │   商品（可点进详情）| 价格 | 卖家/买家 | 状态标签 | 下单时间   │
@@ -15,14 +15,13 @@
   └─────────────────────────────────────────────────────────────┘
 
   订单状态流转（与后端约定）：
-    0 待确认 → 买家可取消 / 卖家可确认交易
-    1 交易中 → 买卖双方都可确认完成
+    1 交易中 → 卖家确认完成 / 任一方取消
     2 已完成 → 双方可评价（评价过显示"已评价"）
     3 已取消 → 终态
 
   操作按钮完全由 role（我是买家还是卖家）和 row.status 决定：
-    · 买家：status=0 取消订单；status=1 确认收货；status=2 评价
-    · 卖家：status=0 确认交易 / 取消；status=1 完成交易；status=2 评价
+    · 买家：status=1 取消订单；status=2 评价
+    · 卖家：status=1 确认完成 / 取消；status=2 评价
 -->
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
@@ -45,8 +44,8 @@ const reviewForm = reactive({ orderId: null, score: 5, content: '' })
 const reviewedOrders = ref(new Set())
 
 // 订单状态码 → 文案 / 标签配色
-const statusMap = { 0: '待确认', 1: '交易中', 2: '已完成', 3: '已取消' }
-const statusType = { 0: 'warning', 1: 'primary', 2: 'success', 3: 'info' }
+const statusMap = { 1: '交易中', 2: '已完成', 3: '已取消' }
+const statusType = { 1: 'primary', 2: 'success', 3: 'info' }
 
 /** 按当前身份与状态筛选条件拉取订单列表 */
 async function load() {
@@ -88,7 +87,7 @@ function onPage(p) {
 }
 
 /**
- * 修改订单状态（取消 / 确认交易 / 确认收货 / 完成交易共用）
+ * 修改订单状态（卖家确认完成 / 任一方取消共用）
  * @param {object} order 当前行订单
  * @param {number} status 目标状态码
  */
@@ -154,7 +153,6 @@ onMounted(load)
     <!-- ===== 状态筛选：所有筛选走同一个接口参数 status ===== -->
     <el-radio-group v-model="statusFilter" class="status-filter" @change="onStatusFilter">
       <el-radio-button value="">全部</el-radio-button>
-      <el-radio-button value="0">待确认</el-radio-button>
       <el-radio-button value="1">交易中</el-radio-button>
       <el-radio-button value="2">已完成</el-radio-button>
       <el-radio-button value="3">已取消</el-radio-button>
@@ -192,16 +190,14 @@ onMounted(load)
           <template #default="{ row }">
             <!-- 买家视角 -->
             <template v-if="role === 'buyer'">
-              <el-button v-if="row.status === 0" size="small" type="info" @click="changeStatus(row, 3)">取消订单</el-button>
-              <el-button v-if="row.status === 1" size="small" type="success" @click="changeStatus(row, 2)">确认收货</el-button>
+              <el-button v-if="row.status === 1" size="small" type="info" @click="changeStatus(row, 3)">取消订单</el-button>
               <el-button v-if="row.status === 2 && !isReviewed(row.id)" size="small" type="primary" @click="openReview(row)">评价</el-button>
               <span v-if="row.status === 2 && isReviewed(row.id)" class="text-muted">已评价</span>
             </template>
             <!-- 卖家视角 -->
             <template v-else>
-              <el-button v-if="row.status === 0" size="small" type="primary" @click="changeStatus(row, 1)">确认交易</el-button>
-              <el-button v-if="row.status === 0" size="small" type="info" @click="changeStatus(row, 3)">取消</el-button>
-              <el-button v-if="row.status === 1" size="small" type="success" @click="changeStatus(row, 2)">完成交易</el-button>
+              <el-button v-if="row.status === 1" size="small" type="success" @click="changeStatus(row, 2)">确认完成</el-button>
+              <el-button v-if="row.status === 1" size="small" type="info" @click="changeStatus(row, 3)">取消</el-button>
               <el-button v-if="row.status === 2 && !isReviewed(row.id)" size="small" type="primary" @click="openReview(row)">评价</el-button>
               <span v-if="row.status === 2 && isReviewed(row.id)" class="text-muted">已评价</span>
             </template>

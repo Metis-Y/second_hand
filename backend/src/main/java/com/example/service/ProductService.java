@@ -42,4 +42,20 @@ public interface ProductService {
      * @return 新商品 id
      */
     Long createProduct(Product req);
+
+    /**
+     * 查询"我发布的"商品（分页，按发布时间倒序）
+     */
+    PageResult<Product> getMyProducts(int page, int size);
+
+    /**
+     * 修改商品：仅限发布者本人
+     */
+    void updateProduct(Long id, Product req);
+
+    /**
+     * 删除商品：仅限发布者本人
+     */
+    void deleteProduct(Long id);
+
 }

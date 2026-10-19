@@ -107,7 +107,7 @@ CREATE TABLE `orders` (
     `seller_id` BIGINT NOT NULL COMMENT '卖家ID',
     `product_id` BIGINT NOT NULL COMMENT '商品ID',
     `price` DECIMAL(10,2) NOT NULL COMMENT '实际成交价格',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '订单状态：0待确认，1交易中，2已完成，3已取消',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '订单状态：1交易中，2已完成，3已取消',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '下单时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 

@@ -159,17 +159,17 @@ export function getOrders(params) {
  */
 export function createOrder(productId) {
   if (USE_MOCK) return mock.createOrder(productId)
-  return request.post('/orders', { productId })
+  return request.post(`/orders/${productId}`)
 }
 
 /**
  * 修改订单状态（确认交易、确认收货、取消订单等）
  * @param {number|string} id 订单 ID
- * @param {number} status 0 待确认 / 1 交易中 / 2 已完成 / 3 已取消
+ * @param {number} status 1 交易中 / 2 已完成 / 3 已取消
  */
 export function updateOrderStatus(id, status) {
   if (USE_MOCK) return mock.updateOrderStatus(id, status)
-  return request.put(`/orders/${id}/status`, { status })
+  return request.put(`/orders/${id}/${status}`)
 }
 
 // ---------- 评价 ----------
