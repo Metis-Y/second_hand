@@ -214,6 +214,34 @@ export async function register({ username, password, nickname, phone, gender }) 
   return { token: `mock-token-${u.id}`, ...toUserDTO(u) }
 }
 
+/** 查询用户资料：按 id 查完整用户，密码置空不返回 */
+export async function getUser(id) {
+  await delay(100)
+  const u = users.find((x) => x.id === Number(id))
+  if (!u) throw new Error('用户不存在')
+  return { ...u, password: null }
+}
+
+/** 编辑资料：只更新传入的非空字段，并同步 localStorage 里的 user（顶栏头像/昵称即时刷新） */
+export async function updateProfile(data) {
+  await delay()
+  const u = currentUser()
+  if (data.nickname != null) u.nickname = data.nickname
+  if (data.avatar != null) u.avatar = data.avatar
+  if (data.phone != null) u.phone = data.phone
+  if (data.gender != null) u.gender = data.gender
+  const raw = localStorage.getItem('user')
+  if (raw) {
+    try {
+      const lu = JSON.parse(raw)
+      if (lu.id === u.id) {
+        localStorage.setItem('user', JSON.stringify({ ...lu, nickname: u.nickname, avatar: u.avatar }))
+      }
+    } catch { /* ignore */ }
+  }
+  return null
+}
+
 // ---------- 分类 ----------
 
 /** 获取全部分类 */
@@ -229,11 +257,12 @@ export async function getCategories() {
  * @param {{page?: number, size?: number, keyword?: string, categoryId?: number|null, status?: number}} 查询条件
  * @returns {{list: Array, total: number}} list 中每条都补了 sellerNickname / favorited
  */
-export async function getProducts({ page = 1, size = 12, keyword = '', categoryId = null, status } = {}) {
+export async function getProducts({ page = 1, size = 12, keyword = '', categoryId = null, userId = null, status } = {}) {
   await delay()
   // 新发布的排前面（按创建时间倒序）
   let list = [...products].sort((a, b) => (b.createTime > a.createTime ? 1 : -1))
   if (categoryId) list = list.filter((p) => p.categoryId === Number(categoryId))
+  if (userId) list = list.filter((p) => p.userId === Number(userId))
   if (keyword) list = list.filter((p) => p.title.includes(keyword) || p.description.includes(keyword))
   if (status !== undefined && status !== null && status !== '') {
     list = list.filter((p) => p.status === Number(status))

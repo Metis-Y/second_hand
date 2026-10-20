@@ -7,6 +7,7 @@ import com.example.entity.User;
 import com.example.exception.BusinessException;
 import com.example.mapper.UserMapper;
 import com.example.service.UserService;
+import com.example.utils.CurrentHolder;
 import com.example.utils.JwtUtil;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,29 @@ public class UserServiceImpl implements UserService {
         String token = jwtUtil.generateToken(dbUser.getId(), dbUser.getUsername());
         UserDTO userDTO = toUserDTO(dbUser, token);
         return userDTO;
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        // 返回 User 实体，密码置空不暴露
+        user.setPassword(null);
+        return user;
+    }
+
+    @Override
+    public void updateProfile(User user) {
+        // 只更新可编辑字段（昵称、头像、手机号、性别），其余字段不参与更新
+        User update = new User();
+        update.setId(CurrentHolder.getCurrentId());
+        update.setNickname(user.getNickname());
+        update.setAvatar(user.getAvatar());
+        update.setPhone(user.getPhone());
+        update.setGender(user.getGender());
+        userMapper.updateById(update);
     }
 
     /** 组装返回 DTO：token + 用户基础信息（不含密码、手机号、性别） */

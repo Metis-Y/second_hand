@@ -31,6 +31,11 @@ public class Review {
     private Long orderId;
 
     /**
+     * 所属商品ID
+     */
+    private Long productId;
+
+    /**
      * 评价人ID
      */
     private Long reviewerId;

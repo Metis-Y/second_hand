@@ -21,12 +21,15 @@ import com.example.utils.CurrentHolder;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
+
+@Slf4j
 @Service
 public class ProductServiceImpl implements ProductService {
 
@@ -65,10 +68,11 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     @Transactional
-    public PageResult<Product> getProducts(int page, int size, Long categoryId, Integer status) {
+    public PageResult<Product> getProducts(int page, int size, Long categoryId, Long userId, Integer status) {
         PageHelper.startPage(page, size);
         List<Product> list = productMapper.selectList(Wrappers.<Product>query()
                 .eq(categoryId != null, "category_id", categoryId) //分类
+                .eq(userId != null, "user_id", userId) //发布用户（个人主页·看别人）
                 .eq(status != null, "status", status)
                 .orderByDesc("update_time")); //降序
 
@@ -207,6 +211,7 @@ public class ProductServiceImpl implements ProductService {
             image.setSort(i);
             productImageMapper.insert(image);
         }
+        log.info("商品修改成功,{}",id);
     }
 
     /**
@@ -214,7 +219,6 @@ public class ProductServiceImpl implements ProductService {
      * 无订单时商品图片、收藏由外键 ON DELETE CASCADE 级联删除
      */
     @Override
-    @Transactional
     public void deleteProduct(Long id) {
         Long userId = CurrentHolder.getCurrentId();
         Product product = productMapper.selectById(id);

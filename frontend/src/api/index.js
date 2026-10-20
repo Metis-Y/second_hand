@@ -32,6 +32,27 @@ export function register(data) {
   return request.post('/auth/register', data)
 }
 
+// ---------- 用户资料 ----------
+
+/**
+ * 查询用户资料（个人主页资料卡 / 看别人主页）
+ * @param {number|string} id 用户 ID
+ * @returns {Promise<object>} 用户资料（User 实体，含 phone/gender，密码已置空）
+ */
+export function getUser(id) {
+  if (USE_MOCK) return mock.getUser(id)
+  return request.get(`/users/${id}`)
+}
+
+/**
+ * 编辑当前登录用户的资料（昵称/头像/手机号/性别）
+ * @param {{nickname?: string, avatar?: string, phone?: string, gender?: number}} data
+ */
+export function updateProfile(data) {
+  if (USE_MOCK) return mock.updateProfile(data)
+  return request.put('/users/me', data)
+}
+
 // ---------- 分类 ----------
 
 /**

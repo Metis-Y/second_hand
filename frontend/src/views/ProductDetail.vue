@@ -108,6 +108,11 @@ async function buy() {
   }
 }
 
+/** 点击卖家信息条：进入卖家个人主页 */
+function goSeller() {
+  router.push(`/user/${product.value.userId}`)
+}
+
 onMounted(load)
 </script>
 
@@ -136,8 +141,8 @@ onMounted(load)
           分类：{{ product.categoryName || '未知' }} · 发布时间：{{ product.createTime }}
         </div>
 
-        <!-- 卖家信息条 -->
-        <div class="seller">
+        <!-- 卖家信息条：点击进入卖家个人主页 -->
+        <div class="seller" @click="goSeller">
           <el-avatar :size="36" :src="product.sellerAvatar">{{ product.sellerNickname?.[0] }}</el-avatar>
           <span>{{ product.sellerNickname }}</span>
         </div>
@@ -151,7 +156,7 @@ onMounted(load)
           </el-button>
           <!-- 按钮文案按优先级：自己的商品 > 在售 > 其他状态 -->
           <el-button type="danger" size="large" :disabled="!canBuy" @click="buy">
-            {{ isMine ? '这是你发布的商品' : product.status === 1 ? '立即购买' : statusText }}
+            {{ isMine ? '不能购买自己发布的商品' : product.status === 1 ? '立即购买' : statusText }}
           </el-button>
         </div>
       </div>
@@ -201,7 +206,7 @@ onMounted(load)
 .info {
   margin: 12px 0;
 }
-/* 卖家信息用浅灰底块与周围内容区分 */
+/* 卖家信息用浅灰底块与周围内容区分；整块可点击进入卖家主页 */
 .seller {
   display: flex;
   align-items: center;
@@ -209,6 +214,10 @@ onMounted(load)
   padding: 12px;
   background: #f7f8fa;
   border-radius: 8px;
+  cursor: pointer;
+}
+.seller:hover {
+  background: #eef1f6;
 }
 /* margin-top:auto 让操作按钮始终贴在右栏底部 */
 .actions {

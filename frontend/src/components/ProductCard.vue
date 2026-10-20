@@ -41,6 +41,11 @@ function goDetail() {
   router.push(`/product/${props.product.id}`)
 }
 
+/** 点击卖家昵称：进入卖家个人主页（用 .stop 阻止冒泡到整卡点击） */
+function goSeller() {
+  router.push(`/user/${props.product.userId}`)
+}
+
 /** 收藏 / 取消收藏：未登录先跳登录，已登录调接口并在本地翻转状态 */
 async function toggleFavorite() {
   if (!userStore.isLogin) {
@@ -88,7 +93,7 @@ async function toggleFavorite() {
         <span class="price">￥{{ product.price }}</span>
         <el-tag :type="statusTagType" size="small" effect="light">{{ statusText }}</el-tag>
       </div>
-      <div class="text-muted">{{ product.sellerNickname }}</div>
+      <div class="text-muted seller" @click.stop="goSeller">{{ product.sellerNickname }}</div>
     </div>
   </div>
 </template>
@@ -164,5 +169,12 @@ async function toggleFavorite() {
 }
 .price {
   font-size: 17px;
+}
+/* 卖家昵称可点，hover 高亮提示可进入卖家主页 */
+.seller {
+  cursor: pointer;
+}
+.seller:hover {
+  color: var(--sh-primary);
 }
 </style>

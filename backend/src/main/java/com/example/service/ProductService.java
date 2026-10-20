@@ -16,9 +16,10 @@ public interface ProductService {
      * @param page       页码（从 1 开始）
      * @param size       每页条数
      * @param categoryId 分类ID，可空
+     * @param userId     发布用户ID，可空（个人主页·看别人用）
      * @param status     商品状态，可空
      */
-    PageResult<Product> getProducts(int page, int size, Long categoryId, Integer status);
+    PageResult<Product> getProducts(int page, int size, Long categoryId, Long userId, Integer status);
 
     /**
      * 按标题关键字搜索商品（分页）

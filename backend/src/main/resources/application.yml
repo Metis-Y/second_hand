@@ -16,10 +16,15 @@ spring:
 
 mybatis-plus:
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #打印 SQL
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl #打印 SQL
     map-underscore-to-camel-case: true #开启驼峰命名
   global-config:
     banner: false
+
+# 通过日志级别控制 SQL 打印，只输出自己 mapper 包的 SQL
+logging:
+  level:
+    com.example.mapper: debug
 
 # JWT 配置（登录签发 token 时使用）
 jwt:

@@ -11,11 +11,13 @@ import com.example.utils.CurrentHolder;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -66,6 +68,7 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.insert(order);
         product.setStatus(2); // 商品置为已售出，别人不能再下单
         productMapper.updateById(product);
+        log.info("下单成功，订单ID：{}", order.getId());
     }
 
     /**

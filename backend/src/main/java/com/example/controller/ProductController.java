@@ -38,8 +38,9 @@ public class ProductController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long userId,
             @RequestParam(required = false) Integer status) {
-        PageResult<Product> products = productService.getProducts(page, size, categoryId, status);
+        PageResult<Product> products = productService.getProducts(page, size, categoryId, userId, status);
         return Result.success(products);
     }
 

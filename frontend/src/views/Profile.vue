@@ -22,11 +22,11 @@
         删除商品前会弹确认框，取消则不执行删除。
 -->
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { getMyProducts, deleteProduct, getUserReviews } from '@/api'
+import { getMyProducts, deleteProduct, getUserReviews, getUser, updateProfile, uploadImage } from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -35,6 +35,16 @@ const activeTab = ref('products')  // 当前页签：products 我发布的 / rev
 const products = ref([])           // 我发布的商品
 const reviews = ref([])            // 我收到的评价
 const loading = ref(false)
+
+const profile = ref(null)          // 当前用户完整资料（含手机号/性别，来自 GET /users/{id}）
+const dialogVisible = ref(false)    // 编辑资料弹窗是否打开
+const saving = ref(false)          // 保存中状态
+const fileInput = ref()            // 隐藏的头像文件选择框
+// 编辑表单：昵称/头像/手机号/性别（性别 0 未知、1 男、2 女，与注册页一致）
+const form = reactive({ nickname: '', avatar: '', phone: '', gender: 0 })
+
+// 性别码 → 文案
+const genderMap = { 1: '男', 2: '女' }
 
 // 商品状态码 → 文案 / 标签配色
 const statusMap = { 0: '已下架', 1: '在售', 2: '已售出', 3: '审核中' }
@@ -82,24 +92,94 @@ async function remove(id) {
   }
 }
 
-onMounted(load)
+/** 加载当前用户完整资料（含手机号/性别），用于资料卡展示与编辑回填 */
+async function loadProfile() {
+  try {
+    profile.value = await getUser(userStore.user.id)
+  } catch (e) {
+    ElMessage.error(e.message || '加载资料失败')
+  }
+}
+
+/** 打开编辑弹窗：用当前资料回填表单 */
+function openEdit() {
+  const p = profile.value || userStore.user
+  form.nickname = p?.nickname || ''
+  form.avatar = p?.avatar || ''
+  form.phone = p?.phone || ''
+  form.gender = p?.gender || 0
+  dialogVisible.value = true
+}
+
+/** 触发头像文件选择框 */
+function pickAvatar() {
+  fileInput.value.click()
+}
+
+/** 选择头像文件后上传（单张，覆盖 form.avatar） */
+async function onAvatarFile(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  try {
+    const res = await uploadImage(file)
+    form.avatar = res.url
+  } catch {
+    ElMessage.error('头像上传失败')
+  }
+}
+
+/** 保存资料：调 PUT /users/me，成功后刷新资料卡并关闭弹窗 */
+async function submitEdit() {
+  saving.value = true
+  try {
+    await updateProfile({
+      nickname: form.nickname,
+      avatar: form.avatar,
+      phone: form.phone,
+      gender: form.gender || null
+    })
+    ElMessage.success('资料已更新')
+    // 同步内存里的当前用户，让顶栏头像/昵称即时刷新
+    if (userStore.user) {
+      userStore.user.nickname = form.nickname
+      userStore.user.avatar = form.avatar
+      localStorage.setItem('user', JSON.stringify({ ...userStore.user, nickname: form.nickname, avatar: form.avatar }))
+    }
+    dialogVisible.value = false
+    await loadProfile()
+  } catch (e) {
+    ElMessage.error(e.message || '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+onMounted(() => {
+  load()
+  loadProfile()
+})
 </script>
 
 <template>
   <div class="page-container">
-    <!-- ===== 用户信息卡：头像 + 昵称 + 角色 + 用户名 ===== -->
+    <!-- ===== 用户信息卡：头像 + 昵称 + 角色 + 性别 + 手机号，右上角编辑按钮 ===== -->
     <div class="card user-card">
-      <el-avatar :size="64" :src="userStore.user?.avatar">{{ userStore.user?.nickname?.[0] }}</el-avatar>
+      <el-avatar :size="64" :src="profile?.avatar || userStore.user?.avatar">{{ (profile?.nickname || userStore.user?.nickname)?.[0] }}</el-avatar>
       <div class="uinfo">
         <div class="uname">
-          {{ userStore.user?.nickname }}
+          {{ profile?.nickname || userStore.user?.nickname }}
           <!-- 角色标签：管理员红色、普通用户灰色 -->
           <el-tag :type="userStore.isAdmin ? 'danger' : 'info'" size="small" effect="light">
             {{ userStore.isAdmin ? '管理员' : '普通用户' }}
           </el-tag>
+          <!-- 性别标签：只有设置了性别才显示 -->
+          <el-tag v-if="genderMap[profile?.gender]" size="small" effect="plain">{{ genderMap[profile?.gender] }}</el-tag>
         </div>
-        <div class="text-muted">@{{ userStore.user?.username }}</div>
+        <div class="text-muted">@{{ profile?.username || userStore.user?.username }}</div>
+        <div v-if="profile?.phone" class="text-muted">手机号：{{ profile.phone }}</div>
       </div>
+      <el-button class="edit-btn" @click="openEdit">编辑资料</el-button>
     </div>
 
     <!-- ===== 两个页签：我发布的 / 收到的评价 ===== -->
@@ -145,6 +225,36 @@ onMounted(load)
         </el-tab-pane>
       </el-tabs>
     </div>
+
+    <!-- ===== 编辑资料弹窗 ===== -->
+    <el-dialog v-model="dialogVisible" title="编辑资料" width="420px">
+      <el-form :model="form" label-width="72px">
+        <el-form-item label="昵称">
+          <el-input v-model="form.nickname" maxlength="16" placeholder="昵称" />
+        </el-form-item>
+        <el-form-item label="头像">
+          <div class="avatar-row">
+            <el-avatar :size="56" :src="form.avatar">{{ form.nickname?.[0] }}</el-avatar>
+            <el-button @click="pickAvatar">上传头像</el-button>
+          </div>
+          <input ref="fileInput" type="file" accept="image/*" hidden @change="onAvatarFile" />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="form.phone" maxlength="11" placeholder="手机号" />
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-radio-group v-model="form.gender">
+            <el-radio :value="0">未知</el-radio>
+            <el-radio :value="1">男</el-radio>
+            <el-radio :value="2">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="submitEdit">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -164,6 +274,17 @@ onMounted(load)
 }
 .section {
   margin-top: 16px;
+}
+/* 编辑按钮靠右，与信息区分 */
+.edit-btn {
+  margin-left: auto;
+  align-self: flex-start;
+}
+/* 头像编辑行：预览 + 上传按钮并排 */
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 /* 商品行：左缩略图 / 中间信息（flex:1 撑开）/ 右按钮组 */
 .prod-row {

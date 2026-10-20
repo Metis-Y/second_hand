@@ -13,4 +13,11 @@ public interface ReviewService {
      * @param size   每页条数
      */
     PageResult<Review> getUserReviews(Long userId, int page, int size);
+
+    /**
+     * 发表评价：仅限订单买卖双方，仅限已完成订单，买家先评后卖家才能评
+     *
+     * @param review 请求体（orderId、score、content），评价人取当前登录用户
+     */
+    void createReview(Review review);
 }

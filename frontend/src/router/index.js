@@ -35,7 +35,9 @@ const routes = [
       // 我的订单：买家/卖家两个视角（需登录）
       { path: 'orders', name: 'orders', component: () => import('@/views/Orders.vue'), meta: { title: '我的订单', requiresAuth: true } },
       // 个人中心：我发布的商品 + 收到的评价（需登录）
-      { path: 'profile', name: 'profile', component: () => import('@/views/Profile.vue'), meta: { title: '个人中心', requiresAuth: true } }
+      { path: 'profile', name: 'profile', component: () => import('@/views/Profile.vue'), meta: { title: '个人中心', requiresAuth: true } },
+      // 个人主页（看别人）：资料卡 + 在售商品 + 收到的评价
+      { path: 'user/:id', name: 'user-profile', component: () => import('@/views/UserProfile.vue'), meta: { title: '个人主页' } }
     ]
   },
   // 以下三页为独立整页布局，不经过 MainLayout
