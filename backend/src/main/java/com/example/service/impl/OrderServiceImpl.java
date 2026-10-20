@@ -28,13 +28,14 @@ public class OrderServiceImpl implements OrderService {
     private ProductMapper productMapper;
 
     /**
-     * 分页查询订单列表：按身份（买家/卖家）+ 状态筛选，联表带出昵称与商品标题
+     * 分页查询订单列表
      */
     @Override
     public PageResult<Order> getOrders(String role, Integer status, int page, int size) {
         Long userId = CurrentHolder.getCurrentId();
         PageHelper.startPage(page, size);
         List<Order> list;
+        //按身份买家/卖家查询
         if ("seller".equals(role)) {
             list = orderMapper.selectOrders(userId, role, status);
         } else {
@@ -79,22 +80,42 @@ public class OrderServiceImpl implements OrderService {
     public void changeStatus(Long orderId, Integer status) {
         Long userId = CurrentHolder.getCurrentId();
         Order order = orderMapper.selectById(orderId);
-        boolean isBuyer = userId.equals(order.getBuyerId());
-        boolean isSeller = userId.equals(order.getSellerId());
-        // 仅买卖双方能操作，且仅交易中(1)可继续：卖家→已完成(2)，任一方→已取消(3)
-        boolean legal = ((isBuyer || isSeller) && order.getStatus() == 1);
-        if (!legal) {
+        boolean b1 = (userId.equals(order.getBuyerId()) || userId.equals(order.getSellerId()));
+        // 仅买卖双方能操作，且仅交易中(1)卖家完成(2)任一方取消(3)
+        if (!b1||order.getStatus()!=1){
             throw new BusinessException("当前状态不能进行该操作");
         }
-        order.setStatus(status);
-        orderMapper.updateById(order);
-        // 取消后设置之商品状态
-        if (status == 3) {
+        //双方都可以取消
+        if (status == 3){
+            order.setStatus(status);
+            orderMapper.updateById(order);
+            // 取消后设置商品状态
             Product product = productMapper.selectById(order.getProductId());
             product.setStatus(1);
             productMapper.updateById(product);
+            return ;
+        }
+        //卖家可以完成
+        if (userId.equals(order.getSellerId()) && status == 2){
+            order.setStatus(status);
+            orderMapper.updateById(order);
         }
 
+        /*if(userId.equals(order.getSellerId())&&status.equals(2)){
+            order.setSellerId(userId);
+            orderMapper.updateById(order);
+            return ;
+        }
+        if ((userId.equals(order.getBuyerId()) || userId.equals(order.getSellerId())) && status==3) {
+
+            orderMapper.updateById(order);
+            // 取消后设置商品状态
+            Product product = productMapper.selectById(order.getProductId());
+            product.setStatus(1);
+            productMapper.updateById(product);
+            return ;
+        }
+        throw new BusinessException("当前状态不能进行该操作");*/
 
     }
 }

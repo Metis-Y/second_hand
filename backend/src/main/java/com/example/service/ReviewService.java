@@ -20,4 +20,13 @@ public interface ReviewService {
      * @param review 请求体（orderId、score、content），评价人取当前登录用户
      */
     void createReview(Review review);
+
+    /**
+     * 分页查询某商品的全部评价（商品详情页评价列表）
+     *
+     * @param productId 商品ID
+     * @param page      页码，从 1 开始
+     * @param size      每页条数
+     */
+    PageResult<Review> getProductReviews(Long productId, int page, int size);
 }

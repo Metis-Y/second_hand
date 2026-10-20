@@ -65,4 +65,22 @@ public class Review {
      */
     @TableField(exist = false)
     private String reviewerNickname;
+
+    /**
+     * 评价人头像（联表 users 带出，非本表字段）
+     */
+    @TableField(exist = false)
+    private String reviewerAvatar;
+
+    /**
+     * 商品标题（联表 product 带出，非本表字段）
+     */
+    @TableField(exist = false)
+    private String productTitle;
+
+    /**
+     * 商品封面图（联表 product 带出，非本表字段）
+     */
+    @TableField(exist = false)
+    private String productCover;
 }

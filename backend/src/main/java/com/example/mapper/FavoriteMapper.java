@@ -13,14 +13,17 @@ import java.util.List;
 public interface FavoriteMapper extends BaseMapper<Favorite> {
 
     /**
-     * 联表查询收藏列表：favorite JOIN product，把商品的标题/价格/封面/状态带出来
+     * 联表查询收藏列表：favorite JOIN product JOIN users（卖家），
+     * 把商品的标题/价格/封面/状态以及卖家昵称/头像带出来
      *
      * @param userId 当前用户ID
-     * @return 收藏记录（含商品字段，按收藏时间倒序）
+     * @return 收藏记录（含商品与卖家字段，按收藏时间倒序）
      */
     @Select("SELECT f.id, f.user_id, f.product_id, f.create_time, " +
-            "p.title, p.price, p.cover, p.status " +
+            "p.title, p.price, p.cover, p.status, " +
+            "p.user_id AS seller_id, u.nickname AS seller_nickname, u.avatar AS seller_avatar " +
             "FROM favorite f JOIN product p ON f.product_id = p.id " +
+            "JOIN users u ON p.user_id = u.id " +
             "WHERE f.user_id = #{userId} " +
             "ORDER BY f.create_time DESC")
     List<Favorite> selectFavoritesWithProduct(@Param("userId") Long userId);

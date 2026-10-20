@@ -37,6 +37,17 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
+     * 分页查询某商品的全部评价，联表带出评价人昵称
+     */
+    @Override
+    public PageResult<Review> getProductReviews(Long productId, int page, int size) {
+        PageHelper.startPage(page, size);
+        List<Review> list = reviewMapper.selectProductReviews(productId);
+        PageInfo<Review> pageInfo = new PageInfo<>(list);
+        return new PageResult<>(pageInfo.getList(), pageInfo.getTotal());
+    }
+
+    /**
      * 发表评价：校验订单/权限/状态/重复评价/买家先评，落库
      */
     @Override
@@ -73,7 +84,7 @@ public class ReviewServiceImpl implements ReviewService {
             }
         }
 
-        // 落库：评价人=当前用户，被评价人=交易对方
+        //评价人=当前用户，被评价人=订单表的对方
         Review newReview = new Review();
         newReview.setOrderId(order.getId());
         newReview.setProductId(order.getProductId());

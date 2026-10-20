@@ -24,7 +24,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getProduct, addFavorite, removeFavorite, createOrder } from '@/api'
+import { getProduct, addFavorite, removeFavorite, createOrder, getProductReviews } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -36,6 +36,7 @@ const productId = route.params.id
 const loading = ref(true)      // 首屏加载遮罩
 const product = ref(null)      // 商品详情对象（含 images、seller）
 const favorited = ref(false)   // 当前用户是否已收藏
+const reviews = ref([])        // 该商品的评价列表（买卖双方评价都显示）
 
 // 商品状态码 → 文案 / 标签配色
 const statusMap = { 0: '已下架', 1: '在售', 2: '已售出', 3: '审核中' }
@@ -63,6 +64,19 @@ async function load() {
   // 收藏状态由商品详情直接带回来（getProduct 返回的 favorited 字段）
   favorited.value = !!product.value.favorited
   loading.value = false
+}
+
+/**
+ * 加载评价列表：/api/reviews/product/{id} 返回该商品全部评价
+ * （买卖双方评价都显示，按评价时间倒序）。失败不阻塞商品详情展示。
+ */
+async function loadReviews() {
+  try {
+    const res = await getProductReviews(productId)
+    reviews.value = res.list
+  } catch (e) {
+    ElMessage.error(e.message || '评价加载失败')
+  }
 }
 
 /**
@@ -113,7 +127,7 @@ function goSeller() {
   router.push(`/user/${product.value.userId}`)
 }
 
-onMounted(load)
+onMounted(() => { load(); loadReviews() })
 </script>
 
 <template>
@@ -166,6 +180,21 @@ onMounted(load)
     <div v-if="product" class="card section">
       <h3>商品描述</h3>
       <p class="desc">{{ product.description || '暂无描述' }}</p>
+    </div>
+
+    <!-- ===== 评价列表区 ===== -->
+    <div v-if="product" class="card section">
+      <h3>评价</h3>
+      <el-empty v-if="reviews.length === 0" description="暂无评价" />
+      <div v-for="r in reviews" :key="r.id" class="review-row">
+        <div class="r-head">
+          <el-avatar :size="28" :src="r.reviewerAvatar">{{ r.reviewerNickname?.[0] }}</el-avatar>
+          <span class="r-name">{{ r.reviewerNickname || '匿名' }}</span>
+          <el-rate :model-value="r.score" disabled />
+          <span class="text-muted">{{ r.createTime }}</span>
+        </div>
+        <p class="r-content">{{ r.content || '（未填写内容）' }}</p>
+      </div>
     </div>
 
     
@@ -234,6 +263,23 @@ onMounted(load)
   color: #606266;
   line-height: 1.7;
   white-space: pre-wrap;
+}
+/* 评价列表：每行一条，上行是评人+星级+时间，下行是内容 */
+.review-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.r-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.r-name {
+  font-weight: 600;
+}
+.r-content {
+  color: #606266;
+  margin: 6px 0 0;
 }
 
 /* 窄屏改为上下单列，图片在上信息在下 */

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 评价接口：POST /api/reviews 发表评价；GET /api/reviews/user/{userId} 查询某用户收到的评价
+ * 评价接口：POST /api/reviews 发表评价；GET /api/reviews/user/{userId} 查询某用户收到的评价；GET /api/reviews/product/{productId} 查询某商品评价
  */
 @RestController
 @RequestMapping("/api/reviews")
@@ -37,6 +37,16 @@ public class ReviewController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "100") int size) {
         PageResult<Review> reviews = reviewService.getUserReviews(userId, page, size);
+        return Result.success(reviews);
+    }
+
+    //查询某商品的全部评价（商品详情页评价列表）
+    @GetMapping("/product/{productId}")
+    public Result getProductReviews(
+            @PathVariable Long productId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "100") int size) {
+        PageResult<Review> reviews = reviewService.getProductReviews(productId, page, size);
         return Result.success(reviews);
     }
 

@@ -67,4 +67,22 @@ public class Favorite {
     @TableField(exist = false)
     private Boolean favorited;
 
+    /**
+     * 卖家ID（联表 product.user_id 带出，非本表字段）
+     */
+    @TableField(exist = false)
+    private Long sellerId;
+
+    /**
+     * 卖家昵称（联表 users 带出，非本表字段）
+     */
+    @TableField(exist = false)
+    private String sellerNickname;
+
+    /**
+     * 卖家头像（联表 users 带出，非本表字段）
+     */
+    @TableField(exist = false)
+    private String sellerAvatar;
+
 }

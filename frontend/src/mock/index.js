@@ -272,7 +272,7 @@ export async function getProducts({ page = 1, size = 12, keyword = '', categoryI
   // 先取总数再切片，total 用于前端分页组件
   const total = list.length
   const start = (Number(page) - 1) * Number(size)
-  const pageList = list.slice(start, start + Number(size)).map((p) => ({ ...p, sellerNickname: nicknameOf(p.userId), favorited: favoritedByCurrent(p.id) }))
+  const pageList = list.slice(start, start + Number(size)).map((p) => ({ ...p, sellerNickname: nicknameOf(p.userId), sellerAvatar: avatarOf(p.userId), favorited: favoritedByCurrent(p.id) }))
   return { list: pageList, total }
 }
 
@@ -395,7 +395,10 @@ export async function getFavorites() {
         price: p.price,
         cover: p.cover,
         status: p.status,
-        favorited: true
+        favorited: true,
+        sellerId: p.userId,
+        sellerNickname: nicknameOf(p.userId),
+        sellerAvatar: avatarOf(p.userId)
       }
     })
     .filter(Boolean)
@@ -514,12 +517,15 @@ export async function createReview({ orderId, score, content }) {
   if (!order) throw new Error('订单不存在')
   const reviews = readList('mock_reviews')
   if (reviews.some((r) => r.orderId === Number(orderId) && r.reviewerId === u.id)) throw new Error('该订单已评价过')
+  const product = findProduct(order.productId)
   const review = {
     id: Date.now(), orderId: Number(orderId),
     productId: order.productId,
     reviewerId: u.id, revieweeId: order.sellerId === u.id ? order.buyerId : order.sellerId,
     score: Number(score), content: content || '', createTime: now(),
-    reviewerNickname: u.nickname, revieweeNickname: order.sellerId === u.id ? order.buyerNickname : order.sellerNickname
+    reviewerNickname: u.nickname, reviewerAvatar: u.avatar,
+    revieweeNickname: order.sellerId === u.id ? order.buyerNickname : order.sellerNickname,
+    productTitle: product?.title || '商品已删除', productCover: product?.cover || ''
   }
   reviews.unshift(review)
   writeList('mock_reviews', reviews)

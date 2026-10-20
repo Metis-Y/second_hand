@@ -19,7 +19,7 @@ import { ElMessage } from 'element-plus'
 import { addFavorite, removeFavorite } from '@/api'
 import { useUserStore } from '@/stores/user'
 
-// 父组件必须传入完整的商品对象：id / title / price / cover / status / sellerNickname / favorited
+// 父组件必须传入完整的商品对象：id / title / price / cover / status / sellerNickname / sellerAvatar / favorited
 const props = defineProps({
   product: { type: Object, required: true },
   // 是否展示收藏心形按钮（首页开启，收藏页用自己的「取消收藏」按钮，不开启）
@@ -93,7 +93,10 @@ async function toggleFavorite() {
         <span class="price">￥{{ product.price }}</span>
         <el-tag :type="statusTagType" size="small" effect="light">{{ statusText }}</el-tag>
       </div>
-      <div class="text-muted seller" @click.stop="goSeller">{{ product.sellerNickname }}</div>
+      <div class="text-muted seller" @click.stop="goSeller">
+        <el-avatar :size="20" :src="product.sellerAvatar">{{ product.sellerNickname?.[0] }}</el-avatar>
+        <span>{{ product.sellerNickname }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -170,9 +173,12 @@ async function toggleFavorite() {
 .price {
   font-size: 17px;
 }
-/* 卖家昵称可点，hover 高亮提示可进入卖家主页 */
+/* 卖家头像 + 昵称可点，hover 高亮提示可进入卖家主页 */
 .seller {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .seller:hover {
   color: var(--sh-primary);

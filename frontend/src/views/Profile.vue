@@ -214,12 +214,19 @@ onMounted(() => {
           <div v-loading="loading">
             <el-empty v-if="!loading && reviews.length === 0" description="暂无评价" />
             <div v-for="r in reviews" :key="r.id" class="review-row">
-              <div class="r-head">
-                <span class="r-name">{{ r.reviewerNickname || '匿名' }}</span>
-                <el-rate :model-value="r.score" disabled />
-                <span class="text-muted">{{ r.createTime }}</span>
+              <div class="r-main">
+                <div class="r-head">
+                  <el-avatar :size="28" :src="r.reviewerAvatar">{{ r.reviewerNickname?.[0] }}</el-avatar>
+                  <span class="r-name">{{ r.reviewerNickname || '匿名' }}</span>
+                  <el-rate :model-value="r.score" disabled />
+                  <span class="text-muted">{{ r.createTime }}</span>
+                </div>
+                <p class="r-content">{{ r.content || '（未填写内容）' }}</p>
               </div>
-              <p class="r-content">{{ r.content || '（未填写内容）' }}</p>
+              <router-link :to="`/product/${r.productId}`" class="r-product">
+                <el-image v-if="r.productCover" :src="r.productCover" fit="cover" class="r-cover" />
+                <span class="r-ptitle">{{ r.productTitle || '查看商品' }}</span>
+              </router-link>
             </div>
           </div>
         </el-tab-pane>
@@ -324,8 +331,15 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .review-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   padding: 12px 0;
   border-bottom: 1px solid #f0f0f0;
+}
+.r-main {
+  flex: 1;
+  min-width: 0;
 }
 .r-head {
   display: flex;
@@ -338,5 +352,25 @@ onMounted(() => {
 .r-content {
   color: #606266;
   margin: 6px 0 0;
+}
+/* 评价右侧的商品入口：封面 + 标题，点击进详情 */
+.r-product {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #606266;
+}
+.r-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+}
+.r-ptitle {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
