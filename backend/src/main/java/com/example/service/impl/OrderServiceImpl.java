@@ -7,6 +7,7 @@ import com.example.exception.BusinessException;
 import com.example.mapper.OrderMapper;
 import com.example.mapper.ProductMapper;
 import com.example.service.OrderService;
+import com.example.utils.CacheClient;
 import com.example.utils.CurrentHolder;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -17,13 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.example.utils.RedisConstants.CACHE_PRODUCT_KEY;
+
 @Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
 
     @Resource
     private OrderMapper orderMapper;
-
+    @Resource
+    private CacheClient cacheClient;
     @Resource
     private ProductMapper productMapper;
 
@@ -69,6 +73,7 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.insert(order);
         product.setStatus(2); // 商品置为已售出，别人不能再下单
         productMapper.updateById(product);
+        cacheClient.delete(CACHE_PRODUCT_KEY + productId);
         log.info("下单成功，订单ID：{}", order.getId());
     }
 
@@ -93,6 +98,8 @@ public class OrderServiceImpl implements OrderService {
             Product product = productMapper.selectById(order.getProductId());
             product.setStatus(1);
             productMapper.updateById(product);
+            //状态有变化，删除缓存
+            cacheClient.delete(CACHE_PRODUCT_KEY + product.getId());
             return ;
         }
         //卖家可以完成

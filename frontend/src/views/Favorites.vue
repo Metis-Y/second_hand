@@ -45,6 +45,11 @@ function goDetail(item) {
   router.push(`/product/${item.productId}`)
 }
 
+/** 点击卖家头像+昵称：进入卖家个人主页（用 .stop 阻止冒泡到整卡点击） */
+function goSeller(item) {
+  router.push(`/user/${item.sellerId}`)
+}
+
 /**
  * 取消收藏：按商品ID删除，成功后重新拉取列表
  * @param {{productId: number}} item 收藏记录对象
@@ -80,6 +85,10 @@ onMounted(load)
           <div class="meta">
             <span class="price">￥{{ item.price }}</span>
             <el-tag :type="tagType(item.status)" size="small" effect="light">{{ statusText(item.status) }}</el-tag>
+          </div>
+          <div class="text-muted seller" @click.stop="goSeller(item)">
+            <el-avatar :size="20" :src="item.sellerAvatar">{{ item.sellerNickname?.[0] }}</el-avatar>
+            <span>{{ item.sellerNickname }}</span>
           </div>
         </div>
       </div>
@@ -163,6 +172,16 @@ onMounted(load)
 }
 .price {
   font-size: 17px;
+}
+/* 卖家头像 + 昵称可点，hover 高亮提示可进入卖家主页 */
+.seller {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.seller:hover {
+  color: var(--sh-primary);
 }
 /* 窄屏降为 2 列 */
 @media (max-width: 960px) {

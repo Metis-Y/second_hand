@@ -17,16 +17,21 @@ import com.example.mapper.ProductImageMapper;
 import com.example.mapper.ProductMapper;
 import com.example.mapper.UserMapper;
 import com.example.service.ProductService;
+import com.example.utils.CacheClient;
 import com.example.utils.CurrentHolder;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.utils.RedisConstants.*;
 
 
 @Slf4j
@@ -35,32 +40,40 @@ public class ProductServiceImpl implements ProductService {
 
     @Resource
     private ProductCategoryMapper productCategoryMapper;
-
     @Resource
     private ProductMapper productMapper;
-
     @Resource
     private ProductImageMapper productImageMapper;
-
     @Resource
     private UserMapper userMapper;
-
     @Resource
     private FavoriteMapper favoriteMapper;
-
+    @Resource
+    private CacheClient cacheClient;
     @Resource
     private OrderMapper orderMapper;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * 查询全部分类，按 sort 升序（sort 相同时按 id 升序，保证顺序稳定）
      */
     @Override
     public List<ProductCategory> getProductCategories() {
-        return productCategoryMapper.selectList(
+        /*return productCategoryMapper.selectList(
                 Wrappers.<ProductCategory>lambdaQuery()
                         .orderByAsc(ProductCategory::getSort)
                         .orderByAsc(ProductCategory::getId)
-        );
+        );*/
+        List<ProductCategory> list= cacheClient.queryListWithPassThrough(
+                CACHE_CATEGORY_KEY, ProductCategory.class, CACHE_CATEGORY_TTL, TimeUnit.MINUTES,
+                () -> productCategoryMapper.selectList(
+                    Wrappers.<ProductCategory>lambdaQuery()
+                        .orderByAsc(ProductCategory::getSort)
+                        .orderByAsc(ProductCategory::getId)
+        ));
+        return list;
+
     }
 
     /**
@@ -101,28 +114,26 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Product getProductById(Long id) {
-        Product product = productMapper.selectById(id);
+        /*Product product = productMapper.selectById(id);
         // 分类名
         ProductCategory category = productCategoryMapper.selectById(product.getCategoryId());
         product.setCategoryName(category.getName());
 
         // 卖家信息
         User user = userMapper.selectById(product.getUserId());
-        if (user != null) {
-            product.setSellerNickname(user.getNickname());
-            product.setSellerAvatar(user.getAvatar());
-        }
+        product.setSellerNickname(user.getNickname());
+        product.setSellerAvatar(user.getAvatar());
 
-        // 是否已收藏（详情页直接用，免去前端再单独调一次查收藏接口）
+        // 是否已收藏
         Long currentId = CurrentHolder.getCurrentId();
         boolean favorited = false;
         Long cnt = favoriteMapper.selectCount(Wrappers.<Favorite>lambdaQuery()
                     .eq(Favorite::getUserId, currentId).eq(Favorite::getProductId, id));
-        favorited = cnt != null && cnt > 0;
-
+        if(cnt != null && cnt > 0){
+            favorited = true;
+        }
         product.setFavorited(favorited);
-
-        // 图片：封面优先 + product_image 按 sort 升序去重
+        // product_image 按 sort 升序去重
         List<ProductImage> imgs = productImageMapper.selectList(
                 Wrappers.<ProductImage>lambdaQuery()
                         .eq(ProductImage::getProductId, id)
@@ -130,9 +141,60 @@ public class ProductServiceImpl implements ProductService {
         //数组图片
         List<String> images = new ArrayList<>();
         for (ProductImage pi : imgs) {
-            if (pi.getImageUrl() != null ) {
-                images.add(pi.getImageUrl());
-            }
+            images.add(pi.getImageUrl());
+        }
+        product.setImages(images);
+        return product;*/
+
+        Product product = cacheClient.queryWithMutex(CACHE_PRODUCT_KEY, id, Product.class,
+                CACHE_PRODUCT_TTL, TimeUnit.MINUTES, this::queryProductById);
+        if (product == null) {
+            throw new BusinessException("商品不存在");
+        }
+
+        /*// 是否已收藏（按当前登录人单独查，不能跟着商品一起缓存，否则会串号）
+        Long cnt = favoriteMapper.selectCount(Wrappers.<Favorite>lambdaQuery()
+                .eq(Favorite::getUserId, CurrentHolder.getCurrentId())
+                .eq(Favorite::getProductId, id));
+        if (cnt != null && cnt > 0) {
+            product.setFavorited(true);
+        } else {
+            product.setFavorited(false);
+        }*/
+        //redis存收藏状态，key是用户id
+        Long userId = CurrentHolder.getCurrentId();
+        Boolean favorited = stringRedisTemplate.opsForSet().isMember(FAVORITE_USER_KEY + userId, String.valueOf(id));
+        product.setFavorited(favorited);
+        return product;
+    }
+
+    /**
+     * 回查数据库组装商品详情：商品本体 + 分类名 + 卖家昵称/头像 + 图片
+     * favorited 字段不放在这里
+     */
+    private Product queryProductById(Long id) {
+        Product product = productMapper.selectById(id);
+        if (product == null) {
+            return null;
+        }
+        // 分类名
+        ProductCategory category = productCategoryMapper.selectById(product.getCategoryId());
+        product.setCategoryName(category.getName());
+
+        // 卖家信息
+        User user = userMapper.selectById(product.getUserId());
+        product.setSellerNickname(user.getNickname());
+        product.setSellerAvatar(user.getAvatar());
+
+        // 图片：product_image 按 sort 升序
+        List<ProductImage> imgs = productImageMapper.selectList(
+                Wrappers.<ProductImage>lambdaQuery()
+                        .eq(ProductImage::getProductId, id)
+                        .orderByAsc(ProductImage::getSort));
+        //数组图片
+        List<String> images = new ArrayList<>();
+        for (ProductImage pi : imgs) {
+            images.add(pi.getImageUrl());
         }
         product.setImages(images);
         return product;
@@ -211,6 +273,8 @@ public class ProductServiceImpl implements ProductService {
             image.setSort(i);
             productImageMapper.insert(image);
         }
+        //删除缓存，查询时再重建
+        cacheClient.delete(CACHE_PRODUCT_KEY + id);
         log.info("商品修改成功,{}",id);
     }
 
@@ -219,6 +283,7 @@ public class ProductServiceImpl implements ProductService {
      * 无订单时商品图片、收藏由外键 ON DELETE CASCADE 级联删除
      */
     @Override
+    @Transactional
     public void deleteProduct(Long id) {
         Long userId = CurrentHolder.getCurrentId();
         Product product = productMapper.selectById(id);
@@ -229,7 +294,15 @@ public class ProductServiceImpl implements ProductService {
         if (cnt > 0) {
             throw new BusinessException("该商品已有订单，不能删除");
         }
+        // 删商品前先查出收藏过它的人：favorite 行会被级联删掉，之后就查不到了
+        List<Favorite> favorites = favoriteMapper.selectList(Wrappers.<Favorite>lambdaQuery()
+                .eq(Favorite::getProductId, id));
         productMapper.deleteById(id);
+        cacheClient.delete(CACHE_PRODUCT_KEY + id);
+        // 清掉每个收藏者 Redis Set 里的这个商品
+        for (Favorite favorite : favorites) {
+            stringRedisTemplate.opsForSet().remove(FAVORITE_USER_KEY + favorite.getUserId(), String.valueOf(id));
+        }
     }
 
     // 抽出公共方法：补充卖家昵称 + 当前用户是否已收藏

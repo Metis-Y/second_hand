@@ -13,6 +13,21 @@ spring:
       max-file-size: 10MB
       #总请求数据大小
       max-request-size: 100MB
+  data:
+    # Redis 配置
+    redis:
+      host: 192.168.100.130
+      port: 6379
+      password: 123
+      #连索引为1的库，默认是0，0我已经配置了
+      #database: 1---目前只有1个库：（
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 10
+          min-idle: 1
+          time-between-eviction-runs: 5s
+
 
 mybatis-plus:
   configuration:
@@ -26,7 +41,7 @@ logging:
   level:
     com.example.mapper: debug
 
-# JWT 配置（登录签发 token 时使用）
+# JWT 配置
 jwt:
   # 密钥：至少 32 位，正式上线前换成自己的一长串随机字符串
   secret: change-me-to-a-long-random-secret-key-2026-please
@@ -34,6 +49,5 @@ jwt:
   expire-hours: 24
 
 # 本地静态图片目录（分类图、商品图、头像等），/uploads/** 会映射到这个目录
-# 注意用正斜杠 /，末尾保留 /
 file:
   upload-dir: D:/quan_zhan/second_hand/uploads/
