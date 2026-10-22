@@ -18,8 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import static com.example.utils.RedisConstants.CACHE_PRODUCT_KEY;
+import static com.example.utils.RedisConstants.*;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -76,14 +77,31 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(Long id) {
-        User user = userMapper.selectById(id);
+        User user = cacheClient.queryWithMutex(CACHE_USER_KEY, id, User.class,
+                CACHE_USER_TTL, TimeUnit.MINUTES, this::queryUserById );
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        return user;
+        /*User user = userMapper.selectById(id);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
         // 返回 User 实体，密码置空不暴露
         user.setPassword(null);
+        return user;*/
+    }
+
+    private User queryUserById(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            return null;
+        }
+        // 密码不进缓存
+        user.setPassword(null);
         return user;
     }
+
 
     @Override
     @Transactional
@@ -97,7 +115,9 @@ public class UserServiceImpl implements UserService {
         update.setPhone(user.getPhone());
         update.setGender(user.getGender());
         userMapper.updateById(update);
-
+        //删除缓存
+        cacheClient.delete(CACHE_USER_KEY + userId);
+        //没必要给用户收藏加redis缓存，不过已经加了才想起来，就懒得删了
         // 商品缓存里存着卖家昵称/头像，改完资料要删掉这个用户所有商品的缓存
         List<Product> products = productMapper.selectList(Wrappers.<Product>lambdaQuery()
                 .eq(Product::getUserId, userId));

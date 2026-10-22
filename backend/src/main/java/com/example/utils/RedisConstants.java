@@ -35,15 +35,19 @@ public class RedisConstants {
     public static final Long CACHE_PRODUCT_TTL = 30L;
 
     /**
-     * 商品缓存重建互斥锁（key = 前缀 + 商品id）
+     * 缓存重建互斥锁（key = 前缀 + 数据id）：商品、用户等所有缓存共用
      */
-    public static final String LOCK_PRODUCT_KEY = KEY_PREFIX + "lock:product:";
+    public static final String LOCK_CACHE_KEY = KEY_PREFIX + "lock:cache:";
 
     /**
      * 互斥锁有效期（秒）：防止持锁线程异常退出导致死锁
      */
     public static final Long LOCK_TTL = 10L;
 
+    //用户的收藏列表缓存（key = 前缀 + 用户id）
     public static final String FAVORITE_USER_KEY = KEY_PREFIX + "favorite:user:";
 
+    //用户信息缓存
+    public static final String CACHE_USER_KEY = KEY_PREFIX + "user:";
+    public static final Long CACHE_USER_TTL = 30L;
 }

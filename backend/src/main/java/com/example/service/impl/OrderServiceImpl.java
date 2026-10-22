@@ -9,10 +9,13 @@ import com.example.mapper.ProductMapper;
 import com.example.service.OrderService;
 import com.example.utils.CacheClient;
 import com.example.utils.CurrentHolder;
+import com.example.utils.SimpleRedisLock;
+import org.springframework.aop.framework.AopContext;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,8 @@ public class OrderServiceImpl implements OrderService {
     private CacheClient cacheClient;
     @Resource
     private ProductMapper productMapper;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * 分页查询订单列表
@@ -54,25 +59,70 @@ public class OrderServiceImpl implements OrderService {
      * 下单购买商品：非本人发布且在售才可下单，下单后商品置为"已售出"
      */
     @Override
-    @Transactional
+    // 事务不能加在锁的外面
+    //@Transactional
     public void createOrder(Long productId) {
         Long userId = CurrentHolder.getCurrentId();
         Product product = productMapper.selectById(productId);
+        if (product == null){
+            throw new BusinessException("商品已被删除");
+        }
         if (userId.equals(product.getUserId())) {
             throw new BusinessException("不能购买自己发布的商品");
         }
         if (product.getStatus() != 1) {
             throw new BusinessException("该商品当前不可购买");
         }
+
+        /**
+         * 使用redis实现防止超卖
+         * */
+        //获取互斥锁
+        SimpleRedisLock lock = new SimpleRedisLock("order:" + productId, stringRedisTemplate);
+        boolean locked = lock.tryLock();
+        if (!locked) {
+            throw new BusinessException("下单的人太多了，请稍后再试");
+        }
+        try {
+            // 通过代理调用，事务在锁内开启并提交，unlock 排在提交之后
+            OrderServiceImpl proxy = (OrderServiceImpl) AopContext.currentProxy();
+            proxy.doCreateOrder(productId);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     *  createOrder 持锁后通过代理调用
+     */
+    //在这里加事务防止不一致，避免自调用
+    @Transactional
+    public void doCreateOrder(Long productId) {
+        Long userId = CurrentHolder.getCurrentId();
+        //再判断一次
+        Product product1 = productMapper.selectById(productId);
+        if (product1.getStatus() != 1) {
+            throw new BusinessException("该商品当前不可购买");
+        }
         Order order = new Order();
         order.setBuyerId(userId);
-        order.setSellerId(product.getUserId());
+        order.setSellerId(product1.getUserId());
         order.setProductId(productId);
-        order.setPrice(product.getPrice());
+        order.setPrice(product1.getPrice());
         order.setStatus(1); // 买家下单 → 1 交易中
         orderMapper.insert(order);
-        product.setStatus(2); // 商品置为已售出，别人不能再下单
-        productMapper.updateById(product);
+        product1.setStatus(2); // 商品置为已售出，别人不能再下单
+        productMapper.updateById(product1);
+        /**
+             使用mysql实现防止超卖
+        **/
+        /*int iss = productMapper.update(null, Wrappers.<Product>lambdaUpdate()
+                .eq(Product::getId, productId)
+                .eq(Product::getStatus, 1)
+                .set(Product::getStatus, 2));
+        if (iss == 0) {
+            throw new BusinessException("商品已经被别人下单了哦");
+        }*/
         cacheClient.delete(CACHE_PRODUCT_KEY + productId);
         log.info("下单成功，订单ID：{}", order.getId());
     }
@@ -85,6 +135,9 @@ public class OrderServiceImpl implements OrderService {
     public void changeStatus(Long orderId, Integer status) {
         Long userId = CurrentHolder.getCurrentId();
         Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
         boolean b1 = (userId.equals(order.getBuyerId()) || userId.equals(order.getSellerId()));
         // 仅买卖双方能操作，且仅交易中(1)卖家完成(2)任一方取消(3)
         if (!b1||order.getStatus()!=1){
@@ -106,8 +159,9 @@ public class OrderServiceImpl implements OrderService {
         if (userId.equals(order.getSellerId()) && status == 2){
             order.setStatus(status);
             orderMapper.updateById(order);
+            return ;
         }
-
+        throw new BusinessException("当前状态不能进行该操作");
         /*if(userId.equals(order.getSellerId())&&status.equals(2)){
             order.setSellerId(userId);
             orderMapper.updateById(order);

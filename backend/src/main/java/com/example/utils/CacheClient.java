@@ -13,7 +13,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.example.utils.RedisConstants.CACHE_NULL_TTL;
-import static com.example.utils.RedisConstants.LOCK_PRODUCT_KEY;
+import static com.example.utils.RedisConstants.LOCK_CACHE_KEY;
 import static com.example.utils.RedisConstants.LOCK_TTL;
 
 /**
@@ -93,7 +93,7 @@ public class CacheClient {
             return null;
         }
 
-        String lockKey = LOCK_PRODUCT_KEY + id;
+        String lockKey = LOCK_CACHE_KEY + id;
         try {
             // 没抢到锁：说明别人正在重建，等一会儿再重试
             if (!tryLock(lockKey)) {

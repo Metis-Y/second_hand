@@ -55,6 +55,7 @@ public class FavoriteServiceImpl implements FavoriteService {
             Favorite favorite = new Favorite();
             favorite.setUserId(userId);
             favorite.setProductId(productId);
+
             favoriteMapper.insert(favorite);
         }
         // SADD 放在 if 外面：已收藏时也补写一次，Redis 数据丢了能自愈
@@ -93,8 +94,5 @@ public class FavoriteServiceImpl implements FavoriteService {
         return new PageResult<>(list, list.size());
     }
 
-    /**
-     * 获取当前登录用户 id，未登录时抛业务异常
-     */
 
 }
