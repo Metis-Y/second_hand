@@ -2,15 +2,24 @@ package com.example.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.example.dto.UserDTO;
+import com.example.entity.Product;
 import com.example.entity.User;
 import com.example.exception.BusinessException;
+import com.example.mapper.ProductMapper;
 import com.example.mapper.UserMapper;
 import com.example.service.UserService;
+import com.example.utils.CacheClient;
 import com.example.utils.CurrentHolder;
 import com.example.utils.JwtUtil;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+import static com.example.utils.RedisConstants.CACHE_PRODUCT_KEY;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -19,6 +28,10 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
     @Resource
     private JwtUtil jwtUtil;
+    @Resource
+    private ProductMapper productMapper;
+    @Resource
+    private CacheClient cacheClient;
 
     @Override
     public UserDTO register(User user) {
@@ -73,15 +86,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void updateProfile(User user) {
+        Long userId = CurrentHolder.getCurrentId();
         // 只更新可编辑字段（昵称、头像、手机号、性别），其余字段不参与更新
         User update = new User();
-        update.setId(CurrentHolder.getCurrentId());
+        update.setId(userId);
         update.setNickname(user.getNickname());
         update.setAvatar(user.getAvatar());
         update.setPhone(user.getPhone());
         update.setGender(user.getGender());
         userMapper.updateById(update);
+
+        // 商品缓存里存着卖家昵称/头像，改完资料要删掉这个用户所有商品的缓存
+        List<Product> products = productMapper.selectList(Wrappers.<Product>lambdaQuery()
+                .eq(Product::getUserId, userId));
+        for (Product product : products) {
+            cacheClient.delete(CACHE_PRODUCT_KEY + product.getId());
+        }
     }
 
     /** 组装返回 DTO：token + 用户基础信息（不含密码、手机号、性别） */
