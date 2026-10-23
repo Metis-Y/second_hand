@@ -134,6 +134,7 @@ COMMENT='订单表';
 CREATE TABLE `review` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评价ID',
     `order_id` BIGINT NOT NULL COMMENT '订单ID',
+    `product_id` BIGINT NOT NULL COMMENT '商品ID',
     `reviewer_id` BIGINT NOT NULL COMMENT '评价人ID',
     `reviewee_id` BIGINT NOT NULL COMMENT '被评价人ID',
     `score` TINYINT NOT NULL COMMENT '评分，1-5分',
@@ -146,6 +147,9 @@ CREATE TABLE `review` (
     CONSTRAINT `fk_review_order`
         FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE RESTRICT,
 
+    CONSTRAINT `fk_review_product`
+        FOREIGN KEY (`product_id`) REFERENCES `product`(`id`) ON DELETE RESTRICT,
+
     CONSTRAINT `fk_review_reviewer`
         FOREIGN KEY (`reviewer_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
 
@@ -154,6 +158,7 @@ CREATE TABLE `review` (
 
     INDEX `idx_review_reviewer_id` (`reviewer_id`),
     INDEX `idx_review_reviewee_id` (`reviewee_id`),
-    INDEX `idx_review_order_id` (`order_id`)
+    INDEX `idx_review_order_id` (`order_id`),
+    INDEX `idx_review_product_id` (`product_id`)
 ) ENGINE=InnoDB
 COMMENT='评价表';

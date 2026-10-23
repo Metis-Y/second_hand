@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.OrderMapper">
+
+    <!--
+        订单列表：orders JOIN users（买家/卖家）JOIN product
+        reviewed 用 EXISTS 子查询判断「当前用户是否已评价过这条订单」，
+        review 表上有 uk_review_order_reviewer(order_id, reviewer_id) 唯一索引，走索引不会慢
+    -->
+    <select id="selectOrders" resultType="com.example.entity.Order">
+        SELECT o.id, o.buyer_id, o.seller_id, o.product_id, o.price, o.status, o.create_time, o.update_time,
+               bu.nickname AS buyer_nickname,
+               su.nickname AS seller_nickname,
+               p.title AS product_title,
+               EXISTS(SELECT 1 FROM review rv
+                      WHERE rv.order_id = o.id AND rv.reviewer_id = #{userId}) AS reviewed
+        FROM orders o
+        JOIN users bu ON o.buyer_id = bu.id
+        JOIN users su ON o.seller_id = su.id
+        JOIN product p ON o.product_id = p.id
+        <where>
+            <choose>
+                <when test="role == 'seller'"> o.seller_id = #{userId} </when>
+                <otherwise> o.buyer_id = #{userId} </otherwise>
+            </choose>
+            <if test="status != null"> AND o.status = #{status} </if>
+        </where>
+        ORDER BY o.create_time DESC
+    </select>
+
+</mapper>

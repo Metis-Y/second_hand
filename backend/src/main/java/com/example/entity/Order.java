@@ -78,4 +78,10 @@ public class Order {
      */
     @TableField(exist = false)
     private String productTitle;
+
+    /**
+     * 当前用户是否已评价该订单（EXISTS 子查询带出，非本表字段）
+     */
+    @TableField(exist = false)
+    private Boolean reviewed;
 }

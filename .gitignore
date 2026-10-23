@@ -2,12 +2,9 @@
 target/
 *.class
 *.jar
-!.mvn/wrapper/maven-wrapper.jar
 .mvn/
 mvnw
 mvnw.cmd
-!mvnw
-!mvnw.cmd
 
 # ===== IDE =====
 .idea/
@@ -33,10 +30,14 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
-!.env.development
-!.env.production
 application-local.yml
 application-local.yaml
+
+# ===== 运行时数据 =====
+# 用户上传的商品图/头像：不是代码，不进仓库
+# （uploads/ 根目录下的分类图是项目自带素材，要保留，所以这里只忽略子目录）
+uploads/products/
+uploads/avatars/
 
 # ===== 日志 =====
 logs/
@@ -46,4 +47,6 @@ logs/
 .DS_Store
 Thumbs.db
 desktop.ini
-接口文档.md
+
+# ===== 与本项目无关的临时产物 =====
+acl-recovery/

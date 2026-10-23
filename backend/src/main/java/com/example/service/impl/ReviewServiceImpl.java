@@ -48,16 +48,28 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * 发表评价：校验订单/权限/状态/重复评价/买家先评，落库
+     * 发表评价：校验入参/订单/权限/状态/重复评价/买家先评，落库
      */
     @Override
     public void createReview(Review review) {
+        // 入参校验：评分 1-5 分，内容不超过 500 字
+        if (review.getScore() == null || review.getScore() < 1 || review.getScore() > 5) {
+            throw new BusinessException("评分必须是 1-5 分");
+        }
+        if (review.getContent() != null && review.getContent().length() > 500) {
+            throw new BusinessException("评价内容不能超过 500 字");
+        }
+
         Long userId = CurrentHolder.getCurrentId();
 
         // 1. 订单存在
         Order order = orderMapper.selectById(review.getOrderId());
         if (order == null) {
             throw new BusinessException("订单不存在");
+        }
+        // 2. 只有该订单的买家或卖家才能评价
+        if (!userId.equals(order.getBuyerId()) && !userId.equals(order.getSellerId())) {
+            throw new BusinessException("无权评价该订单");
         }
         // 3. 只有已完成的订单能评价
         if (order.getStatus() != 2) {

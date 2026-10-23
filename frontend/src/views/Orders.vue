@@ -40,8 +40,6 @@ const total = ref(0)             // 符合条件的订单总数（分页器用�
 const reviewDialog = ref(false)  // 弹窗显隐
 const reviewSaving = ref(false)  // 提交中
 const reviewForm = reactive({ orderId: null, score: 5, content: '' })
-// 本次会话内已评价过的订单 id，用于把"评价"按钮换成"已评价"文字
-const reviewedOrders = ref(new Set())
 
 // 订单状态码 → 文案 / 标签配色
 const statusMap = { 1: '交易中', 2: '已完成', 3: '已取消' }
@@ -112,12 +110,11 @@ function openReview(order) {
   reviewDialog.value = true
 }
 
-/** 提交评价：成功后记入 reviewedOrders 并刷新列表 */
+/** 提交评价：成功后刷新列表（列表里带 reviewed 字段，按钮自动变成"已评价"） */
 async function submitReview() {
   reviewSaving.value = true
   try {
     await createReview({ ...reviewForm })
-    reviewedOrders.value.add(reviewForm.orderId)
     reviewDialog.value = false
     ElMessage.success('评价成功')
     load()
@@ -130,11 +127,12 @@ async function submitReview() {
 
 /**
  * 判断某订单是否已评价过（驱动按钮/文字切换）
- * @param {number} orderId
+ * 由后端联表查询的 reviewed 字段决定，刷新页面也不会丢
+ * @param {object} order 订单行
  * @returns {boolean}
  */
-function isReviewed(orderId) {
-  return reviewedOrders.value.has(orderId)
+function isReviewed(order) {
+  return order.reviewed === true
 }
 
 onMounted(load)
@@ -191,15 +189,15 @@ onMounted(load)
             <!-- 买家视角 -->
             <template v-if="role === 'buyer'">
               <el-button v-if="row.status === 1" size="small" type="info" @click="changeStatus(row, 3)">取消订单</el-button>
-              <el-button v-if="row.status === 2 && !isReviewed(row.id)" size="small" type="primary" @click="openReview(row)">评价</el-button>
-              <span v-if="row.status === 2 && isReviewed(row.id)" class="text-muted">已评价</span>
+              <el-button v-if="row.status === 2 && !isReviewed(row)" size="small" type="primary" @click="openReview(row)">评价</el-button>
+              <span v-if="row.status === 2 && isReviewed(row)" class="text-muted">已评价</span>
             </template>
             <!-- 卖家视角 -->
             <template v-else>
               <el-button v-if="row.status === 1" size="small" type="success" @click="changeStatus(row, 2)">确认完成</el-button>
               <el-button v-if="row.status === 1" size="small" type="info" @click="changeStatus(row, 3)">取消</el-button>
-              <el-button v-if="row.status === 2 && !isReviewed(row.id)" size="small" type="primary" @click="openReview(row)">评价</el-button>
-              <span v-if="row.status === 2 && isReviewed(row.id)" class="text-muted">已评价</span>
+              <el-button v-if="row.status === 2 && !isReviewed(row)" size="small" type="primary" @click="openReview(row)">评价</el-button>
+              <span v-if="row.status === 2 && isReviewed(row)" class="text-muted">已评价</span>
             </template>
           </template>
         </el-table-column>
