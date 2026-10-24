@@ -1,8 +1,3 @@
-/**
- * =====================================================================
- * Vite 构建 / 开发服务器配置
- * =====================================================================
- */
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'

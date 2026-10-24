@@ -1,18 +1,3 @@
-<!--
-  Favorites.vue —— 我的收藏页        路由：/favorites（需登录）
-  =====================================================================
-  布局（限宽 1200px）：
-  ┌───────────────────────────────────────────────────────┐
-  │  标题「我的收藏」                                       │
-  ├───────────────────────────────────────────────────────┤
-  │  grid 商品网格（宽屏 4 列，≤960px 降 2 列）             │
-  │    每个格子渲染收藏记录自带字段：cover/title/price/status │
-  │              + 右上角「取消收藏」浮层按钮                │
-  │  没有收藏时显示 el-empty「还没有收藏任何商品」           │
-  └───────────────────────────────────────────────────────┘
-  说明：后端 getFavorites 联表 favorite+product，返回收藏对象（id/productId +
-  商品 title/price/cover/status + favorited）；卡片进详情、取消收藏都用 productId。
--->
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
