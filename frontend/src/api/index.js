@@ -1,15 +1,10 @@
 // =====================================================================
 // API 层：统一前端所有后端调用。
-// 约定：后端返回 { code, message, data }，code 200 成功（解包逻辑见 utils/request.js）。
-// 每个函数都是同一个套路：
-//   · VITE_USE_MOCK=true  → 走 mock/index.js 的内置演示数据（后端没写好也能跑页面）
-//   · VITE_USE_MOCK=false → 走真实 http 请求（地址前缀 /api，由 vite 代理到后端）
+// 约定：后端返回 { code, message, data }，code 1 成功（解包逻辑见 utils/request.js）。
+// 地址前缀统一 /api，开发时由 vite 代理到后端，生产由 nginx 转发。
 // 页面只 import 这里的函数，不直接写 axios，便于日后统一替换。
 // =====================================================================
 import request from '@/utils/request'
-import * as mock from '@/mock'
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 // ---------- 认证 ----------
 
@@ -19,7 +14,6 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
  * @returns {Promise<object>} 登录数据：token + 用户信息（扁平结构，无嵌套 user 字段）
  */
 export function login(data) {
-  if (USE_MOCK) return mock.login(data)
   return request.post('/auth/login', data)
 }
 
@@ -28,7 +22,6 @@ export function login(data) {
  * @param {{username: string, password: string, nickname?: string, phone?: string}} data
  */
 export function register(data) {
-  if (USE_MOCK) return mock.register(data)
   return request.post('/auth/register', data)
 }
 
@@ -40,7 +33,6 @@ export function register(data) {
  * @returns {Promise<object>} 用户资料（User 实体，含 phone/gender，密码已置空）
  */
 export function getUser(id) {
-  if (USE_MOCK) return mock.getUser(id)
   return request.get(`/users/${id}`)
 }
 
@@ -49,7 +41,6 @@ export function getUser(id) {
  * @param {{nickname?: string, avatar?: string, phone?: string, gender?: number}} data
  */
 export function updateProfile(data) {
-  if (USE_MOCK) return mock.updateProfile(data)
   return request.put('/users/me', data)
 }
 
@@ -60,7 +51,6 @@ export function updateProfile(data) {
  * @returns {Promise<Array<{id: number, name: string}>>}
  */
 export function getCategories() {
-  if (USE_MOCK) return mock.getCategories()
   return request.get('/products/categories')
 }
 
@@ -72,7 +62,6 @@ export function getCategories() {
  * @returns {Promise<{list: Array, total: number}>}
  */
 export function getProducts(params) {
-  if (USE_MOCK) return mock.getProducts(params)
   return request.get('/products', { params })
 }
 
@@ -82,7 +71,6 @@ export function getProducts(params) {
  * @returns {Promise<{list: Array, total: number}>}
  */
 export function searchProducts(params) {
-  if (USE_MOCK) return mock.getProducts(params)
   return request.get('/products/search', { params })
 }
 
@@ -91,7 +79,6 @@ export function searchProducts(params) {
  * @param {number|string} id 商品 ID
  */
 export function getProduct(id) {
-  if (USE_MOCK) return mock.getProduct(id)
   return request.get(`/products/${id}`)
 }
 
@@ -100,7 +87,6 @@ export function getProduct(id) {
  * @param {{title: string, categoryId: number, price: number, description?: string, images?: string[]}} data
  */
 export function createProduct(data) {
-  if (USE_MOCK) return mock.createProduct(data)
   return request.post('/products', data)
 }
 
@@ -110,7 +96,6 @@ export function createProduct(data) {
  * @param {object} data 同 createProduct
  */
 export function updateProduct(id, data) {
-  if (USE_MOCK) return mock.updateProduct(id, data)
   return request.put(`/products/${id}`, data)
 }
 
@@ -119,7 +104,6 @@ export function updateProduct(id, data) {
  * @param {number|string} id 商品 ID
  */
 export function deleteProduct(id) {
-  if (USE_MOCK) return mock.deleteProduct(id)
   return request.delete(`/products/${id}`)
 }
 
@@ -128,7 +112,6 @@ export function deleteProduct(id) {
  * @returns {Promise<{list: Array, total: number}>}
  */
 export function getMyProducts() {
-  if (USE_MOCK) return mock.getMyProducts()
   return request.get('/products/my')
 }
 
@@ -139,7 +122,6 @@ export function getMyProducts() {
  * @returns {Promise<{list: Array, total: number}>}
  */
 export function getFavorites() {
-  if (USE_MOCK) return mock.getFavorites()
   return request.get('/favorites')
 }
 
@@ -148,7 +130,6 @@ export function getFavorites() {
  * @param {number|string} productId 商品 ID
  */
 export function addFavorite(productId) {
-  if (USE_MOCK) return mock.addFavorite(productId)
   return request.post(`/favorites/${productId}`)
 }
 
@@ -157,7 +138,6 @@ export function addFavorite(productId) {
  * @param {number|string} productId 商品 ID
  */
 export function removeFavorite(productId) {
-  if (USE_MOCK) return mock.removeFavorite(productId)
   return request.delete(`/favorites/${productId}`)
 }
 
@@ -170,7 +150,6 @@ export function removeFavorite(productId) {
  * @returns {Promise<{list: Array, total: number}>}
  */
 export function getOrders(params) {
-  if (USE_MOCK) return mock.getOrders(params)
   return request.get('/orders', { params })
 }
 
@@ -179,7 +158,6 @@ export function getOrders(params) {
  * @param {number|string} productId 商品 ID
  */
 export function createOrder(productId) {
-  if (USE_MOCK) return mock.createOrder(productId)
   return request.post(`/orders/${productId}`)
 }
 
@@ -189,7 +167,6 @@ export function createOrder(productId) {
  * @param {number} status 1 交易中 / 2 已完成 / 3 已取消
  */
 export function updateOrderStatus(id, status) {
-  if (USE_MOCK) return mock.updateOrderStatus(id, status)
   return request.put(`/orders/${id}/${status}`)
 }
 
@@ -200,7 +177,6 @@ export function updateOrderStatus(id, status) {
  * @param {number|string} productId 商品 ID
  */
 export function getProductReviews(productId) {
-  if (USE_MOCK) return mock.getProductReviews(productId)
   return request.get(`/reviews/product/${productId}`)
 }
 
@@ -209,7 +185,6 @@ export function getProductReviews(productId) {
  * @param {number|string} userId 用户 ID
  */
 export function getUserReviews(userId) {
-  if (USE_MOCK) return mock.getUserReviews(userId)
   return request.get(`/reviews/user/${userId}`)
 }
 
@@ -218,7 +193,6 @@ export function getUserReviews(userId) {
  * @param {{orderId: number, score: number, content?: string}} data 评分 1~5 与评价内容
  */
 export function createReview(data) {
-  if (USE_MOCK) return mock.createReview(data)
   return request.post('/reviews', data)
 }
 
@@ -227,11 +201,10 @@ export function createReview(data) {
 /**
  * 上传商品图片
  * @param {File} file 浏览器 File 对象
- * @returns {Promise<{url: string}>} 图片可访问地址（mock 下为本地 data URL）
+ * @returns {Promise<{url: string}>} 图片可访问地址
  */
 export function uploadImage(file) {
-  if (USE_MOCK) return mock.uploadImage(file)
-  // 真实接口需用 multipart/form-data，字段名为 file
+  // 接口需用 multipart/form-data，字段名为 file
   const fd = new FormData()
   fd.append('file', file)
   return request.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })

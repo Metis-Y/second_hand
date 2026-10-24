@@ -1,52 +1,28 @@
-# ===== Java / Spring Boot / Maven =====
+# ===== Java / Maven 构建产物 =====
 target/
 *.class
-*.jar
-.mvn/
-mvnw
-mvnw.cmd
 
 # ===== IDE =====
 .idea/
 *.iml
-*.ipr
-*.iws
-.vscode/
-*.swp
-*.swo
 
-# ===== Node / 前端 =====
+# ===== Maven wrapper 配置（mvnw 需要 .mvn/wrapper 才能跑，必须入库）=====
+# .mvn/wrapper/maven-wrapper.properties 已在仓库中，不要在这里忽略 .mvn/
+
+# ===== 前端依赖与构建产物 =====
 node_modules/
 dist/
-dist-ssr/
-.vite/
-*.local
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# ===== 环境变量 / 密钥（本地配置不入库）=====
+# ===== 本地配置（.env.development / .env.production 是要入库的）=====
 .env
-.env.*
-!.env.example
-application-local.yml
-application-local.yaml
+.env.local
+.env.*.local
+!.env.development
+!.env.production
 
-# ===== 运行时数据 =====
-# 用户上传的商品图/头像：不是代码，不进仓库
-# （uploads/ 根目录下的分类图是项目自带素材，要保留，所以这里只忽略子目录）
+# ===== 用户上传的图片 =====
+# uploads/ 根目录下的 4 张分类图是项目自带素材，要保留，所以只忽略 products 子目录
 uploads/products/
-uploads/avatars/
-
-# ===== 日志 =====
-logs/
-*.log
 
 # ===== 系统文件 =====
 .DS_Store
-Thumbs.db
-desktop.ini
-
-# ===== 与本项目无关的临时产物 =====
-acl-recovery/

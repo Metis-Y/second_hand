@@ -1,8 +1,14 @@
 -- =========================================================
--- 校园二手教材 / 闲置交易平台
+-- 校园二手交易平台 —— 完整初始化脚本
 -- MySQL 8.0
--- 说明：请先手动创建数据库并选中，再执行以下建表语句
+-- 用法（先建库，再执行本文件）
+-- 内容：
+--   1~7  建表：users / category / product / product_image / favorite / orders / review
+--   8    基础数据：4 个商品分类（不导入的话发布商品时没有分类可选）
 -- =========================================================
+
+-- Docker 等精简环境里 mysql 客户端默认按 latin1 读文件，这里改成utf8mb4
+SET NAMES utf8mb4;
 
 -- =========================================================
 -- 1. 用户表
@@ -107,7 +113,7 @@ CREATE TABLE `orders` (
     `seller_id` BIGINT NOT NULL COMMENT '卖家ID',
     `product_id` BIGINT NOT NULL COMMENT '商品ID',
     `price` DECIMAL(10,2) NOT NULL COMMENT '实际成交价格',
-    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '订单状态：1交易中，2已完成，3已取消',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '订单状态：0待确认，1交易中，2已完成，3已取消',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '下单时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 
@@ -162,3 +168,15 @@ CREATE TABLE `review` (
     INDEX `idx_review_product_id` (`product_id`)
 ) ENGINE=InnoDB
 COMMENT='评价表';
+
+-- =========================================================
+-- 8. 基础数据：商品分类
+--
+-- 分类图放在 uploads/ 根目录，页面首页分类栏直接引用
+-- =========================================================
+
+INSERT INTO `category` (`id`, `name`, `image`, `sort`) VALUES
+    (1, '教材',     '/uploads/book.png',        0),
+    (2, '电子产品', '/uploads/electronics.png', 1),
+    (3, '生活用品', '/uploads/life.png',        2),
+    (4, '其他',     '/uploads/other.png',       3);
