@@ -16,6 +16,7 @@
 | 收藏 | 添加/取消收藏、我的收藏列表 |
 | 订单 | 下单、我买到的 / 我卖出的、卖家确认完成、双方取消 |
 | 评价 | 对已完成订单评价、商品评价列表、个人主页收到的评价 |
+| 消息 | 下单后给卖家发站内通知、未读红点、标记已读 |
 
 ## 技术栈
 
@@ -23,6 +24,7 @@
 | --- | ---------------------------------------------------------- |
 | 后端  | Spring Boot 3.5.7、Java 21、MyBatis-Plus、PageHelper、AOP 动态代理 |
 | 存储  | MySQL 8、Redis                                              |
+| 消息  | RabbitMQ（Spring AMQP）                                      |
 | 鉴权  | JWT + 拦截器 + ThreadLocal                                    |
 | 前端  | Vue 3、Vite 5、Element Plus、Pinia、Axios                      |
 
@@ -37,7 +39,8 @@ second_hand/
 │       │   ├── service/      业务层
 │       │   ├── mapper/       数据访问层（复杂 SQL 在 resources/mapper/*.xml）
 │       │   ├── entity/       实体
-│       │   ├── config/       配置（WebConfig：拦截器 + 静态资源映射）
+│       │   ├── config/       配置（WebConfig：拦截器 + 静态资源映射；RabbitMQConfig：队列与交换机）
+│       │   ├── mq/           消息消费者
 │       │   ├── interceptor/  登录拦截器
 │       │   └── utils/        工具（JWT、Redis 缓存、互斥锁等）
 │       └── resources/
@@ -64,6 +67,7 @@ second_hand/
 | Maven   | 3.9+ | 命令行构建；用 IDEA 可忽略（自带 Maven） |
 | MySQL   | 8.x  | 字符集需为 utf8mb4              |
 | Redis   | 6.x+ | 缓存、收藏、下单锁都依赖它              |
+| RabbitMQ | 3.x  | 下单通知走消息队列，需带 management 插件的镜像 |
 | Node.js | 18+  | 自带 npm                     |
 |         |      |                            |
 redis下载自己找教程 
@@ -81,9 +85,23 @@ mysql -u root -p --default-character-set=utf8mb4 second_hand < sql/second_hand.s
 
 > 也可以通过navicat等引入sql语句创建，数据要自己插入
 
-### 2. 修改后端配置
+### 2. 启动 RabbitMQ
 
-打开 `backend/src/main/resources/application.yml`，改这三处：
+```bash
+docker run -d --name rabbitmq   -p 5672:5672 -p 15672:15672   -e RABBITMQ_DEFAULT_USER=admin   -e RABBITMQ_DEFAULT_PASS=123   rabbitmq:3-management
+
+# 给本项目单独建一个 vhost，和同机器上的其他项目隔离
+docker exec rabbitmq rabbitmqctl add_vhost second_hand
+docker exec rabbitmq rabbitmqctl set_permissions -p second_hand admin ".*" ".*" ".*"
+```
+
+管理界面：`http://localhost:15672`（账号 `admin`，密码 `123`）。
+
+> 本机已装 RabbitMQ 的可以跳过，只建 vhost 即可。
+
+### 3. 修改后端配置
+
+打开 `backend/src/main/resources/application.yml`，改这四处：
 
 ```yaml
 spring:
@@ -98,6 +116,13 @@ spring:
       port: 6379
       password: 123       # 没设密码就把这一行删掉
 
+  rabbitmq:
+    host: 127.0.0.1       # 改成你的 RabbitMQ 地址
+    port: 5672
+    username: admin
+    password: 123
+    virtual-host: second_hand   # 与第 2 步建的一致
+
 file:
   upload-dir: D:/quan_zhan/second_hand/uploads/          # 改成你的图片目录，末尾带 /
 ```
@@ -105,7 +130,7 @@ file:
 > `upload-dir` 指向项目里的 `uploads/` 目录即可，写绝对路径，**结尾必须带 `/`**。
 > Linux/macOS 示例：`/home/yourname/second_hand/uploads/`
 
-### 3. 启动后端
+### 4. 启动后端
 
 ```bash
 cd backend
@@ -121,7 +146,7 @@ Tomcat started on port 8080 (http)
 Started BackendApplication in 3.037 seconds
 ```
 
-### 4. 启动前端
+### 5. 启动前端
 
 ```bash
 cd frontend
@@ -133,18 +158,18 @@ npm run dev
 
 打包生产版本用 `npm run build`，产物在 `frontend/dist`；`npm run preview` 可本地预览构建结果。
 
-### 5. 验证是否跑通
+### 6. 验证是否跑通
 
 ```
 
 然后在浏览器打开 `http://localhost:5173`，注册一个账号，登录后应该能看到 4 个分类。发布一个商品、上传一张图片，整条链路就通了。
 
-### 6. 同步收藏缓存（有历史数据时）
+### 7. 同步收藏缓存（有历史数据时）
 在 IDEA 里运行测试类 `backend/src/test/java/com/example/FavoriteCacheTest.java` 的 `preheat()` 方法。
 ---
 ```
 
-**npm install 很慢**
+**npm install 很慢时加镜像**
 
 ```bash
 npm config set registry https://registry.npmmirror.com
