@@ -4,7 +4,8 @@
 -- 用法（先建库，再执行本文件）
 -- 内容：
 --   1~7  建表：users / category / product / product_image / favorite / orders / review
---   8    基础数据：4 个商品分类（不导入的话发布商品时没有分类可选）
+--   8    建表：notification（站内通知）
+--   9    基础数据：4 个商品分类（不导入的话发布商品时没有分类可选）
 -- =========================================================
 
 -- Docker 等精简环境里 mysql 客户端默认按 latin1 读文件，这里改成utf8mb4
@@ -170,7 +171,27 @@ CREATE TABLE `review` (
 COMMENT='评价表';
 
 -- =========================================================
--- 8. 基础数据：商品分类
+-- 8. 站内通知表
+-- =========================================================
+CREATE TABLE `notification` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '通知ID',
+    `user_id` BIGINT NOT NULL COMMENT '接收人ID',
+    `type` TINYINT NOT NULL COMMENT '通知类型：1新订单，2收到评价',
+    `content` VARCHAR(255) NOT NULL COMMENT '通知内容',
+    `order_id` BIGINT COMMENT '关联订单ID',
+    `is_read` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已读：0未读，1已读',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+
+    CONSTRAINT `fk_notification_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+
+    INDEX `idx_notification_user_read` (`user_id`, `is_read`),
+    INDEX `idx_notification_order_id` (`order_id`)
+) ENGINE=InnoDB
+COMMENT='站内通知表';
+
+-- =========================================================
+-- 9. 基础数据：商品分类
 --
 -- 分类图放在 uploads/ 根目录，页面首页分类栏直接引用
 -- =========================================================
