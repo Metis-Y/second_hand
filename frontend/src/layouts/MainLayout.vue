@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getUnreadCount } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -22,6 +23,28 @@ const activeMenu = computed(() => route.path)
 function doSearch() {
   router.push({ name: 'home', query: keyword.value ? { keyword: keyword.value } : {} })
 }
+
+// 未读通知数量：顶栏铃铛上的红点，0 时不显示
+const unread = ref(0)
+
+/** 拉取未读数：未登录直接清零，不给后端发无意义的请求 */
+async function loadUnread() {
+  if (!userStore.isLogin) {
+    unread.value = 0
+    return
+  }
+  try {
+    unread.value = await getUnreadCount()
+  } catch {
+    unread.value = 0
+  }
+}
+
+onMounted(loadUnread)
+// 每次切换页面重新拉一次：在消息中心读完回到别的页面，红点能及时消失
+watch(() => route.path, loadUnread)
+// 登录状态变化时也刷新：刚登录不该显示上一个账号的未读数
+watch(() => userStore.isLogin, loadUnread)
 
 /**
  * 用户头像下拉菜单的回调
@@ -79,8 +102,11 @@ function handleCommand(cmd) {
             </template>
           </el-input>
 
-          <!-- 已登录：头像 + 昵称，点开下拉可进个人中心或退出 -->
+          <!-- 已登录：消息铃铛 + 未读红点，点头像进个人中心或退出 -->
           <template v-if="userStore.isLogin">
+            <el-badge :value="unread" :max="99" :hidden="unread === 0" class="bell">
+              <el-icon class="bell-icon" @click="router.push('/notifications')"><Bell /></el-icon>
+            </el-badge>
             <el-dropdown @command="handleCommand">
               <span class="user">
                 <el-avatar :size="30" :src="userStore.user?.avatar">{{ (userStore.user?.nickname || '用')[0] }}</el-avatar>
@@ -193,5 +219,19 @@ function handleCommand(cmd) {
   color: #c0c4cc;
   font-size: 13px;
   padding: 20px;
+}
+/* 顶栏消息铃铛：与头像同高，hover 变主题色 */
+.bell {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.bell-icon {
+  font-size: 20px;
+  color: #606266;
+  transition: color 0.15s;
+}
+.bell:hover .bell-icon {
+  color: var(--sh-primary);
 }
 </style>
