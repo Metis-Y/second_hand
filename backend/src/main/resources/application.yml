@@ -34,7 +34,7 @@ spring:
     port: 5672
     username: admin
     password: 123
-    virtual-host: /
+    virtual-host: second_hand
 
 mybatis-plus:
   configuration:
