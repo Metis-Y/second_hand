@@ -22,6 +22,8 @@ const routes = [
       { path: 'orders', name: 'orders', component: () => import('@/views/Orders.vue'), meta: { title: '我的订单', requiresAuth: true } },
       // 个人中心：我发布的商品 + 收到的评价（需登录）
       { path: 'profile', name: 'profile', component: () => import('@/views/Profile.vue'), meta: { title: '个人中心', requiresAuth: true } },
+      // 我的消息：站内通知列表（需登录）
+      { path: 'notifications', name: 'notifications', component: () => import('@/views/Notifications.vue'), meta: { title: '我的消息', requiresAuth: true } },
       // 个人主页（看别人）：资料卡 + 在售商品 + 收到的评价
       { path: 'user/:id', name: 'user-profile', component: () => import('@/views/UserProfile.vue'), meta: { title: '个人主页' } }
     ]

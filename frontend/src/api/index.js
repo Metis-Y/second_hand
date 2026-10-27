@@ -203,3 +203,36 @@ export function uploadImage(file) {
   fd.append('file', file)
   return request.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
 }
+// ---------- 站内通知 ----------
+
+/**
+ * 我的通知列表（分页，按下发时间倒序）
+ * @param {{page?: number, size?: number}} params
+ * @returns {Promise<{list: Array, total: number}>}
+ */
+export function getNotifications(params) {
+  return request.get('/notifications', { params })
+}
+
+/**
+ * 未读通知数量（顶栏红点用）
+ * @returns {Promise<number>}
+ */
+export function getUnreadCount() {
+  return request.get('/notifications/unread-count')
+}
+
+/**
+ * 单条标记已读
+ * @param {number|string} id 通知 ID
+ */
+export function markNotificationRead(id) {
+  return request.put(`/notifications/${id}/read`)
+}
+
+/**
+ * 全部标记已读
+ */
+export function markAllNotificationsRead() {
+  return request.put('/notifications/read-all')
+}
