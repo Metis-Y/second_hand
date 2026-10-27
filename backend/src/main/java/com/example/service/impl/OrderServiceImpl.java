@@ -97,8 +97,13 @@ public class OrderServiceImpl implements OrderService {
         }
         // 事务已提交、锁已释放，再把消息发出去：
         // 放锁外是为了不让 MQ 的网络耗时占着锁；放事务外是为了避免事务回滚了消息却已经发出去
-        rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE, RabbitMQConfig.ORDER_CREATED_KEY, order);
-        log.info("下单消息已发送到 MQ：订单ID={}", order.getId());
+        // 发送失败只记日志：订单已经建好了，不能因为通知发不出去就让下单接口报错
+        try {
+            rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE, RabbitMQConfig.ORDER_CREATED_KEY, order);
+            log.info("下单消息已发送到 MQ：订单ID={}", order.getId());
+        } catch (Exception e) {
+            log.error("下单消息发送失败，订单ID={}，卖家将收不到通知", order.getId(), e);
+        }
     }
 
     /**
