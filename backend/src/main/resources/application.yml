@@ -28,6 +28,13 @@ spring:
           min-idle: 1
           time-between-eviction-runs: 5s
 
+  # RabbitMQ 配置（消息队列：下单通知、订单超时取消）
+  rabbitmq:
+    host: 192.168.100.130
+    port: 5672
+    username: admin
+    password: 123
+    virtual-host: /
 
 mybatis-plus:
   configuration:

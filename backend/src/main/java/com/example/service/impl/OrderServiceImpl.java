@@ -1,5 +1,6 @@
 package com.example.service.impl;
 
+import com.example.config.RabbitMQConfig;
 import com.example.dto.PageResult;
 import com.example.entity.Order;
 import com.example.entity.Product;
@@ -11,6 +12,7 @@ import com.example.utils.CacheClient;
 import com.example.utils.CurrentHolder;
 import com.example.utils.SimpleRedisLock;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
@@ -35,6 +37,8 @@ public class OrderServiceImpl implements OrderService {
     private ProductMapper productMapper;
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+    @Resource
+    private RabbitTemplate rabbitTemplate;
 
     /**
      * 分页查询订单列表
@@ -83,13 +87,18 @@ public class OrderServiceImpl implements OrderService {
         if (!locked) {
             throw new BusinessException("下单的人太多了，请稍后再试");
         }
+        Order order;
         try {
             // 通过代理调用，事务在锁内开启并提交，unlock 排在提交之后
             OrderServiceImpl proxy = (OrderServiceImpl) AopContext.currentProxy();
-            proxy.doCreateOrder(productId);
+            order = proxy.doCreateOrder(productId);
         } finally {
             lock.unlock();
         }
+        // 事务已提交、锁已释放，再把消息发出去：
+        // 放锁外是为了不让 MQ 的网络耗时占着锁；放事务外是为了避免事务回滚了消息却已经发出去
+        rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE, RabbitMQConfig.ORDER_CREATED_KEY, order);
+        log.info("下单消息已发送到 MQ：订单ID={}", order.getId());
     }
 
     /**
@@ -97,7 +106,7 @@ public class OrderServiceImpl implements OrderService {
      */
     //在这里加事务防止不一致，避免自调用
     @Transactional
-    public void doCreateOrder(Long productId) {
+    public Order doCreateOrder(Long productId) {
         Long userId = CurrentHolder.getCurrentId();
         //再判断一次
         Product product1 = productMapper.selectById(productId);
@@ -125,6 +134,7 @@ public class OrderServiceImpl implements OrderService {
         }*/
         cacheClient.delete(CACHE_PRODUCT_KEY + productId);
         log.info("下单成功，订单ID：{}", order.getId());
+        return order;
     }
 
     /**
