@@ -1,9 +1,14 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getOrders, updateOrderStatus, createReview } from '@/api'
 
-const role = ref('buyer')        // 视角：buyer 我买到的 / seller 我卖出的
+const route = useRoute()
+// 从消息中心点过来时会带 role=seller，直接停到"我卖出的"页签
+const role = ref(route.query.role === 'seller' ? 'seller' : 'buyer')        // 视角：buyer 我买到的 / seller 我卖出的
+// 消息中心带过来的订单ID：对应那一行高亮，方便一眼看到要确认哪一单
+const highlightId = ref(route.query.orderId ? String(route.query.orderId) : '')
 const statusFilter = ref('')     // 状态筛选，'' 表示全部
 const list = ref([])             // 当前页订单
 const loading = ref(false)       // 表格加载遮罩
@@ -110,6 +115,11 @@ function isReviewed(order) {
   return order.reviewed === true
 }
 
+/** 表格行样式：消息中心跳过来时高亮目标订单 */
+function rowClass({ row }) {
+  return highlightId.value && String(row.id) === highlightId.value ? 'highlight-row' : ''
+}
+
 onMounted(load)
 </script>
 
@@ -133,7 +143,7 @@ onMounted(load)
 
     <!-- ===== 订单表格 ===== -->
     <div class="card table-card" v-loading="loading">
-      <el-table :data="list">
+      <el-table :data="list" :row-class-name="rowClass">
         <!-- 商品名：可点击跳详情，商品被删除时显示占位文案 -->
         <el-table-column label="商品" min-width="160">
           <template #default="{ row }">
@@ -235,5 +245,9 @@ onMounted(load)
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+}
+/* 从消息中心跳转过来时，目标订单整行浅黄底色 */
+:deep(.highlight-row) {
+  background: #fff8e1;
 }
 </style>

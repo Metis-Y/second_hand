@@ -1,8 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from '@/api'
 
+const router = useRouter()
 const list = ref([])        // 通知列表
 const total = ref(0)        // 总条数（分页器用）
 const page = ref(1)         // 当前页码
@@ -33,13 +35,18 @@ async function load() {
 }
 
 /**
- * 点击一条通知：未读的顺手标记已读
+ * 点击一条通知：先标记已读，再跳到对应订单
+ * 新订单通知是发给卖家的，所以跳"我卖出的"页签，并把那一单高亮出来
  * @param {object} item 通知对象
  */
 async function onItemClick(item) {
-  if (item.isRead === 1) return
-  await markNotificationRead(item.id)
-  item.isRead = 1              // 本地直接改，不用重新请求整个列表
+  if (item.isRead === 0) {
+    await markNotificationRead(item.id)
+    item.isRead = 1            // 本地直接改，不用重新请求整个列表
+  }
+  if (item.orderId) {
+    router.push({ name: 'orders', query: { role: 'seller', orderId: item.orderId } })
+  }
 }
 
 /** 全部标记已读：成功后把当前页的都置为已读 */
